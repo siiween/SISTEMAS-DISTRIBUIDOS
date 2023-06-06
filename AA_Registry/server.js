@@ -16,13 +16,41 @@ app.use(express.json());
 app.post("/registro", (req, res) => {
   const { alias, password, nivel, EF, E } = req.body;
 
-  db.run("INSERT INTO jugadores (alias, password, nivel, EF, E) VALUES (?, ?, ?, ?, ?)", [alias, password, nivel, EF, E], (err) => {
+  if (!alias || !password || !nivel || !EF || !E) {
+    const atributosFaltantes = [];
+    if (!alias) atributosFaltantes.push("alias");
+    if (!password) atributosFaltantes.push("password");
+    if (!nivel) atributosFaltantes.push("nivel");
+    if (!EF) atributosFaltantes.push("EF");
+    if (!E) atributosFaltantes.push("E");
+    return res.status(400).json({ error: "Faltan los siguientes atributos: " + atributosFaltantes.join(", ") });
+  }
+
+  // Verificar si el alias ya existe en la base de datos
+  db.get("SELECT id FROM jugadores WHERE alias = ?", alias, (err, row) => {
     if (err) {
       console.error(err.message);
-      return res.status(500).send("Error al registrar el jugador");
+      return res.status(500).send("Error al verificar el alias del jugador");
     }
 
-    return res.send("Jugador registrado correctamente");
+    if (row) {
+      // El alias ya existe, mostrar un error
+      return res.status(409).send("El alias ya está registrado");
+    }
+
+    // El alias no existe, registrar el jugador
+    db.run(
+      "INSERT INTO jugadores (alias, password, nivel, EF, E) VALUES (?, ?, ?, ?, ?)",
+      [alias, password, nivel, EF, E],
+      (err) => {
+        if (err) {
+          console.error(err.message);
+          return res.status(500).send("Error al registrar el jugador");
+        }
+
+        return res.send("Jugador registrado correctamente");
+      }
+    );
   });
 });
 
