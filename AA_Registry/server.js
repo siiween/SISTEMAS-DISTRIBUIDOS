@@ -6,10 +6,37 @@ const port = args[0] ? parseInt(args[0], 10) : 3000;
 const db = new sqlite3.Database("database.db"); // Nombre del archivo de la base de datos
 
 db.serialize(() => {
-  db.run(
-    "CREATE TABLE IF NOT EXISTS jugadores (id INTEGER PRIMARY KEY AUTOINCREMENT, alias TEXT, password TEXT, nivel INTEGER, EF INTEGER, E INTEGER)"
-  );
+  db.run(`CREATE TABLE IF NOT EXISTS Jugadores (
+    ID INTEGER PRIMARY KEY,
+    Alias TEXT,
+    Password TEXT,
+    Nivel INTEGER,
+    EF INTEGER,
+    EC INTEGER
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS Mapa (
+    ID INTEGER PRIMARY KEY,
+    PosicionX INTEGER CHECK (PosicionX BETWEEN 1 AND 20),
+    PosicionY INTEGER CHECK (PosicionY BETWEEN 1 AND 20),
+    Elemento TEXT,
+    Descripcion TEXT
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS Ciudades (
+    ID INTEGER PRIMARY KEY,
+    Nombre TEXT,
+    Temperatura INTEGER
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS Clima (
+    ID INTEGER PRIMARY KEY,
+    CiudadID INTEGER,
+    Descripcion TEXT,
+    FOREIGN KEY (CiudadID) REFERENCES Ciudades(ID)
+  )`);
 });
+
 
 app.use(express.json());
 
