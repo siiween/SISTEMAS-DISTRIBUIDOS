@@ -1,4 +1,11 @@
 const readline = require("readline");
+const io = require("socket.io-client");
+
+const args = process.argv.slice(2);
+const port = 5000;
+const enginePort = args[0] ? parseInt(args[1], 10) : "http://localhost:3000";
+const kafkaPort = args[1] ? parseInt(args[2], 10) : "http://localhost:6000";
+const registryPort = args[2] ? parseInt(args[2], 10) : "http://localhost:7000";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -46,6 +53,9 @@ function manejarEntrada(opcion) {
 }
 
 const registrarJugador = () => {
+  // Establecer conexión con el servidor de registro
+  const socket = io(registryPort);
+
   rl.question("Alias: ", (alias) => {
     rl.question("Contraseña: ", (password) => {
       rl.question("Nivel: ", (nivel) => {
@@ -58,8 +68,13 @@ const registrarJugador = () => {
               EF: ef,
               EC: ec,
             };
-            console.log(jugador);
-            console.log("Nuevo jugador registrado con éxito");
+            // Enviar evento de creación de jugador al servidor de registro
+            try {
+              socket.emit("createPlayer", jugador);
+              console.log("Jugador creado con éxito");
+            } catch (error) {
+              console.log(error);
+            }
             rl.question("Presione enter para continuar...", () => {
               mostrarMenu();
             });
@@ -71,9 +86,35 @@ const registrarJugador = () => {
 };
 
 const editarJugador = () => {
-  console.log("Jugador editado con éxito");
-  rl.question("Presione enter para continuar...", () => {
-    mostrarMenu();
+  // Establecer conexión con el servidor de registro
+  const socket = io(registryPort);
+
+  rl.question("Alias: ", (alias) => {
+    rl.question("Contraseña: ", (password) => {
+      rl.question("Nivel: ", (nivel) => {
+        rl.question("EF: ", (ef) => {
+          rl.question("EC: ", (ec) => {
+            const jugador = {
+              alias,
+              password,
+              nivel,
+              EF: ef,
+              EC: ec,
+            };
+
+            try {
+              socket.emit("editPlayer", jugador);
+              console.log("Jugador editado correctamente");
+            } catch (error) {
+              console.log(error);
+            }
+            rl.question("Presione enter para continuar...", () => {
+              mostrarMenu();
+            });
+          });
+        });
+      });
+    });
   });
 };
 
