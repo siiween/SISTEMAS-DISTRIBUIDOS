@@ -1,110 +1,99 @@
-const readline = require('readline');
-const io = require('socket.io-client');
+const readline = require("readline");
 
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
-
-// Conectarse al servidor de sockets
-const socket = io.connect('http://localhost:3000');
 
 // Mostrar opciones por consola
 function mostrarMenu() {
-  console.log('Seleccione una opción:');
-  console.log('1. Crear un nuevo jugador');
-  console.log('2. Editar un jugador existente');
-  console.log('3. Unirse a la partida');
-  console.log('4. Moverse en el mapa');
-  console.log('0. Salir');
+  console.log("Seleccione una opción:");
+  console.log("1. Crear un nuevo jugador");
+  console.log("2. Editar un jugador existente");
+  console.log("3. Unirse a la partida");
+  console.log("4. Moverse en el mapa");
+  console.log("0. Salir");
 }
 
 // Manejar entrada del usuario
 function manejarEntrada(opcion) {
   switch (opcion) {
-    case '1':
-      // Lógica para crear un nuevo jugador
-      console.log('Creando un nuevo jugador...');
+    case "1":
+      // Crear un nuevo jugador
       registrarJugador();
       break;
-    case '2':
-      // Lógica para editar un jugador existente
-      console.log('Editar un jugador existente...');
+    case "2":
+      // Editar un jugador
+      editarJugador();
       break;
-    case '3':
-      // Lógica para unirse a la partida
-      console.log('Unirse a la partida...');
+    case "3":
+      // Unirse a la partida
+      unirsePartida();
       break;
-    case '4':
-      // Lógica para moverse en el mapa
-      console.log('Moverse en el mapa...');
+    case "4":
+      // Mover jugador
+      moverJugador();
       break;
-    case '0':
+    case "0":
       // Salir
-      console.log('Saliendo del programa...');
       rl.close();
       return;
     default:
-      console.log('Opción inválida');
+      console.log("Opción inválida");
+      mostrarMenu();
       break;
   }
-
-  // Volver a mostrar el menú
-  mostrarMenu();
 }
 
-// Mostrar el menú inicial
-mostrarMenu();
-
-// Leer la entrada del usuario
-rl.on('line', (input) => {
-  manejarEntrada(input.trim());
-});
-
-// Función para registrar un nuevo jugador
-function registrarJugador() {
-  rl.question('Alias: ', (alias) => {
-    rl.question('Contraseña: ', (password) => {
-      rl.question('Nivel: ', (nivel) => {
-        rl.question('EF: ', (ef) => {
-          rl.question('EC: ', (ec) => {
+const registrarJugador = () => {
+  rl.question("Alias: ", (alias) => {
+    rl.question("Contraseña: ", (password) => {
+      rl.question("Nivel: ", (nivel) => {
+        rl.question("EF: ", (ef) => {
+          rl.question("EC: ", (ec) => {
             const jugador = {
               alias,
               password,
               nivel,
               EF: ef,
-              EC: ec
+              EC: ec,
             };
             console.log(jugador);
-            socket.emit('createPlayer', jugador); // Emitir evento "createPlayer" al servidor
+            console.log("Nuevo jugador registrado con éxito");
+            rl.question("Presione enter para continuar...", () => {
+              mostrarMenu();
+            });
           });
         });
       });
     });
   });
-}
+};
 
-// Escuchar eventos del servidor
-socket.on('connect', () => {
-  console.log('Conectado al servidor');
-});
+const editarJugador = () => {
+  console.log("Jugador editado con éxito");
+  rl.question("Presione enter para continuar...", () => {
+    mostrarMenu();
+  });
+};
 
-socket.on('disconnect', () => {
-  console.log('Desconectado del servidor');
-});
+const unirsePartida = () => {
+  console.log("Unirse a la partida");
+  rl.question("Presione enter para continuar...", () => {
+    mostrarMenu();
+  });
+};
 
-socket.on('playerCreated', (message) => {
-  console.log(message);
-});
+const moverJugador = () => {
+  console.log("Mover Jugador");
+  rl.question("Presione enter para continuar...", () => {
+    mostrarMenu();
+  });
+};
 
-socket.on('playerEdited', (message) => {
-  console.log(message);
-});
-
-socket.on('playerJoinedGame', (message) => {
-  console.log(message);
-});
-
-socket.on('playerMoved', (message) => {
-  console.log(message);
+// Mostrar el menú inicial
+mostrarMenu();
+// Leer la entrada del usuario
+rl.on("line", (input) => {
+  manejarEntrada(input.trim());
 });
