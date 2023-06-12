@@ -1,10 +1,13 @@
 const readline = require('readline');
-const axios = require('axios');
+const io = require('socket.io-client');
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
+
+// Conectarse al servidor de sockets
+const socket = io.connect('http://localhost:3000');
 
 // Mostrar opciones por consola
 function mostrarMenu() {
@@ -72,17 +75,8 @@ function registrarJugador() {
               EF: ef,
               EC: ec
             };
-
-            axios.post('http://localhost:3000/registro', jugador)
-              .then(response => {
-                console.log(response.data);
-              })
-              .catch(error => {
-                console.error('Error al registrar el jugador:', error.message);
-              })
-              .finally(() => {
-                mostrarMenu();
-              });
+            console.log(jugador);
+            socket.emit('createPlayer', jugador); // Emitir evento "createPlayer" al servidor
           });
         });
       });
@@ -90,58 +84,27 @@ function registrarJugador() {
   });
 }
 
-const express = require('express');
-const http = require('http');
-const socketIO = require('socket.io');
-
-const app = express();
-const server = http.createServer(app);
-const io = socketIO(server);
-const port = 3000;
-
-// Rutas para el jugador
-app.get('/', (req, res) => {
-  res.send('¡Bienvenido a Against All!');
+// Escuchar eventos del servidor
+socket.on('connect', () => {
+  console.log('Conectado al servidor');
 });
 
-// Manejar conexión de sockets
-io.on('connection', (socket) => {
-  console.log('Nuevo cliente conectado');
-
-  // Evento para crear un nuevo jugador
-  socket.on('createPlayer', () => {
-    // Lógica para crear un nuevo jugador
-
-    // Emitir evento de confirmación al cliente
-    socket.emit('playerCreated', 'Jugador creado');
-  });
-
-  // Evento para editar un jugador existente
-  socket.on('editPlayer', (playerId) => {
-    // Lógica para editar un jugador existente
-
-    // Emitir evento de confirmación al cliente
-    socket.emit('playerEdited', `Jugador ${playerId} editado`);
-  });
-
-  // Evento para que un jugador se una a la partida
-  socket.on('joinGame', (playerId) => {
-    // Lógica para que un jugador se una a la partida
-
-    // Emitir evento de confirmación al cliente
-    socket.emit('playerJoinedGame', `Jugador ${playerId} unido a la partida`);
-  });
-
-  // Evento para que un jugador se mueva en el mapa
-  socket.on('movePlayer', ({ playerId, direction }) => {
-    // Lógica para que un jugador se mueva en el mapa
-
-    // Emitir evento de confirmación al cliente
-    socket.emit('playerMoved', `Jugador ${playerId} se movió en dirección ${direction}`);
-  });
+socket.on('disconnect', () => {
+  console.log('Desconectado del servidor');
 });
 
-// Iniciar el servidor
-server.listen(port, () => {
-  console.log(`Servidor escuchando en el puerto ${port}`);
+socket.on('playerCreated', (message) => {
+  console.log(message);
+});
+
+socket.on('playerEdited', (message) => {
+  console.log(message);
+});
+
+socket.on('playerJoinedGame', (message) => {
+  console.log(message);
+});
+
+socket.on('playerMoved', (message) => {
+  console.log(message);
 });
