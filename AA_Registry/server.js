@@ -16,54 +16,59 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("Cliente desconectado");
   });
-});
 
-app.post("/registro", (req, res) => {
-  const { alias, password, nivel, EF, EC } = req.body;
-
-  if (!alias || !password || !nivel || !EF || !EC) {
-    const atributosFaltantes = [];
-    if (!alias) atributosFaltantes.push("alias");
-    if (!password) atributosFaltantes.push("password");
-    if (!nivel) atributosFaltantes.push("nivel");
-    if (!EF) atributosFaltantes.push("EF");
-    if (!EC) atributosFaltantes.push("EC");
-    return res
-      .status(400)
-      .json({
+  // Evento para crear un nuevo jugador
+  socket.on("createPlayer", ({ alias, password, nivel, EF, EC }) => {
+    if (!alias || !password || !nivel || !EF || !EC) {
+      const atributosFaltantes = [];
+      if (!alias) atributosFaltantes.push("alias");
+      if (!password) atributosFaltantes.push("password");
+      if (!nivel) atributosFaltantes.push("nivel");
+      if (!EF) atributosFaltantes.push("EF");
+      if (!EC) atributosFaltantes.push("EC");
+      return socket.emit("registrationError", {
         error: "Faltan los siguientes atributos: " + atributosFaltantes.join(", "),
       });
-  }
-
-  // Verificar si el alias ya existe en la base de datos
-  db.get("SELECT id FROM jugadores WHERE alias = ?", alias, (err, row) => {
-    if (err) {
-      console.error(err.message);
-      return res
-        .status(500)
-        .send("Error al verificar el alias del jugador");
     }
 
-    if (row) {
-      // El alias ya existe, mostrar un error
-      return res.status(409).send("El alias ya está registrado");
-    }
-
-    // El alias no existe, registrar el jugador
-    db.run(
-      "INSERT INTO jugadores (alias, password, nivel, EF, EC) VALUES (?, ?, ?, ?, ?)",
-      [alias, password, nivel, EF, EC],
-      (err) => {
-        if (err) {
-          console.error(err.message);
-          return res.status(500).send("Error al registrar el jugador");
-        }
-
-        console.log("Jugador registrado correctamente");
-        io.emit("jugadorRegistrado", { alias });
-        return res.send("Jugador registrado correctamente");
+    // Verificar si el alias ya existe en la base de datos
+    db.get("SELECT id FROM jugadores WHERE alias = ?", alias, (err, row) => {
+      if (err) {
+        console.error(err.message);
+        return socket.emit("registrationError", {
+          error: "Error al verificar el alias del jugador",
+        });
       }
-    );
+
+      if (row) {
+        // El alias ya existe, mostrar un error
+        return socket.emit("registrationError", {
+          error: "El alias ya está registrado",
+        });
+      }
+
+      // El alias no existe, registrar el jugador
+      db.run(
+        "INSERT INTO jugadores (alias, password, nivel, EF, EC) VALUES (?, ?, ?, ?, ?)",
+        [alias, password, nivel, EF, EC],
+        (err) => {
+          if (err) {
+            console.error(err.message);
+            return socket.emit("registrationError", {
+              error: "Error al registrar el jugador",
+            });
+          }
+
+          console.log("Jugador registrado correctamente");
+          const playerData = { alias, password, nivel, EF, EC };
+          io.emit("playerRegistered", playerData);
+          return socket.emit("registrationSuccess", {
+            message: "Jugador registrado correctamente",
+            playerData,
+          });
+        }
+      );
+    });
   });
 });
 
