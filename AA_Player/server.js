@@ -114,10 +114,28 @@ const editarJugador = () => {
 };
 
 const unirsePartida = () => {
+
   console.log("Unirse a la partida");
-  rl.question("Presione enter para continuar...", () => {
-    mostrarMenu();
+
+  const socket = io(enginePort);
+  rl.question("Alias: ", (alias) => {
+    rl.question("Contraseña: ", (password) => {
+        const jugadorAut = { alias, password}
+    
+        try{
+          socket.emit("autPlayer", jugadorAut);
+          console.log("Jugador identificado correctamente");
+        }catch (error){
+          console.log(error);
+        }
+
+        rl.question("Presione enter para continuar...", () => {
+          mostrarMenu();
+        });
+
+    });
   });
+
 };
 
 // Mostrar el menú inicial

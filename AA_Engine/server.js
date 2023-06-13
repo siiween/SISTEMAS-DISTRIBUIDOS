@@ -1,4 +1,6 @@
 const express = require("express");
+const http = require("http");
+const socketIO = require("socket.io");
 const app = express();
 const db = require("../database/db");
 const args = process.argv.slice(2);
@@ -27,31 +29,6 @@ app.post("/game/move", (req, res) => {
   res.send("Movimiento de jugador realizado");
 });
 
-app.listen(port, () => {
-  console.log(`El servidor principal está escuchando en el puerto ${port}`);
-});
-
-function getWeatherFromSocket() {
-  const io = require("socket.io-client");
-  const socket = io(`http://localhost:${weatherPort}`);
-
-  return new Promise((resolve, reject) => {
-    socket.on("connect", () => {
-      console.log("Conexión establecida con el servidor de sockets de clima");
-
-      socket.emit("weather");
-    });
-
-    socket.on("weather", (response) => {
-      socket.disconnect();
-      resolve(response);
-    });
-
-    socket.on("disconnect", () => {
-      console.log("Desconectado del servidor de sockets de clima");
-    });
-  });
-}
 
 // Endpoint para obtener información del clima
 app.get("/weather", async (req, res) => {
@@ -64,3 +41,47 @@ app.get("/weather", async (req, res) => {
     res.status(500).send("Error al obtener información del clima");
   }
 });
+
+
+const server = http.createServer(app);
+const io = socketIO(server);
+
+io.on("connection", (socket) => {
+ 
+
+  socket.on("disconnect", () => {
+    
+  });
+
+  socket.on("autPlayer", ({ alias, password }) => {
+    if (!alias || !password) {
+      const atributosFaltantes = [];
+      if (!alias) atributosFaltantes.push("alias");
+      if (!password) atributosFaltantes.push("password");
+      return socket.emit("registrationError", {
+        error: "Faltan los siguientes atributos: " + atributosFaltantes.join(", "),
+      });
+    }
+
+    // Verificar si el alias y password coinciden en la base de datos
+    db.get("SELECT id FROM jugadores WHERE alias = ? AND password = ?", [alias, password], (err, row) => {
+      if (err) console.error(err.message);
+
+      if (!row) {
+        console.log("Alias o contraseña incorrectos");
+        return;
+      }
+
+      // El alias y password coinciden, realizar acciones adicionales si es necesario
+      console.log("Jugador autenticado correctamente");
+
+      // Resto de acciones adicionales, como enviar datos al cliente, etc.
+    });
+  });
+});
+
+server.listen(port, () => {
+  console.log(`El servidor principal está escuchando en el puerto ${port}`);
+});
+
+
