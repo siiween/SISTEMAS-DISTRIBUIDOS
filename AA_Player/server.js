@@ -127,12 +127,21 @@ const editarJugador = () => {
 };
 
 const unirsePartida = () => {
-  console.log("Unirse a la partida");
+  const socket = io(enginePort);
+  rl.question("Alias: ", (alias) => {
+    rl.question("Contraseña: ", (password) => {
+      const jugadorAut = { alias, password };
 
-  drawMap(map.map);
+      try {
+        socket.emit("autPlayer", jugadorAut);
+      } catch (error) {
+        console.log(error);
+      }
 
-  rl.question("Presione enter para continuar...", () => {
-    mostrarMenu();
+      rl.question("Presione enter para continuar...", () => {
+        mostrarMenu();
+      });
+    });
   });
 };
 
