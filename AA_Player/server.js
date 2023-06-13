@@ -138,8 +138,13 @@ const unirsePartida = () => {
         console.log(error);
       }
 
-      rl.question("Presione enter para continuar...", () => {
+      socket.on("registrationError", (data) => {
+        console.log("Error:", data.error);
         mostrarMenu();
+      });
+
+      socket.on("registrationSuccess", () => {
+        console.log("Jugador autenticado correctamente");
       });
     });
   });

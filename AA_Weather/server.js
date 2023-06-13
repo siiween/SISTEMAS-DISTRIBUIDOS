@@ -2,6 +2,8 @@ const http = require("http");
 const fs = require("fs");
 const io = require("socket.io");
 
+const weatherPort = 4000;
+
 const server = http.createServer((req, res) => {
   res.writeHead(404);
   res.end("Not Found");
@@ -35,7 +37,6 @@ ioServer.on("connection", (socket) => {
   });
 });
 
-const weatherPort = 4000;
 server.listen(weatherPort, () => {
   console.log(`Servidor de sockets de clima iniciado en el puerto ${weatherPort}`);
 });

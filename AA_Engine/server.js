@@ -45,6 +45,8 @@ const server = http.createServer(app);
 const io = socketIO(server);
 
 io.on("connection", (socket) => {
+  console.log("Un cliente se ha conectado");
+
   socket.on("disconnect", () => {});
 
   socket.on("autPlayer", ({ alias, password }) => {
@@ -63,13 +65,14 @@ io.on("connection", (socket) => {
 
       if (!row) {
         console.log("Alias o contraseña incorrectos");
-        return;
+        return socket.emit("registrationError", {
+          error: "Alias o contraseña incorrectos",
+        });
       }
 
       // El alias y password coinciden, realizar acciones adicionales si es necesario
       console.log("Jugador autenticado correctamente");
-
-      // Resto de acciones adicionales, como enviar datos al cliente, etc.
+      socket.emit("registrationSuccess");
     });
   });
 });
