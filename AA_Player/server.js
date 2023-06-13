@@ -18,7 +18,6 @@ function mostrarMenu() {
   console.log("1. Crear un nuevo jugador");
   console.log("2. Editar un jugador existente");
   console.log("3. Unirse a la partida");
-  console.log("4. Moverse en el mapa");
   console.log("0. Salir");
 }
 
@@ -36,10 +35,6 @@ function manejarEntrada(opcion) {
     case "3":
       // Unirse a la partida
       unirsePartida();
-      break;
-    case "4":
-      // Mover jugador
-      moverJugador();
       break;
     case "0":
       // Salir
@@ -120,13 +115,6 @@ const editarJugador = () => {
 
 const unirsePartida = () => {
   console.log("Unirse a la partida");
-  rl.question("Presione enter para continuar...", () => {
-    mostrarMenu();
-  });
-};
-
-const moverJugador = () => {
-  console.log("Mover Jugador");
   rl.question("Presione enter para continuar...", () => {
     mostrarMenu();
   });

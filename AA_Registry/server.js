@@ -64,7 +64,6 @@ io.on("connection", (socket) => {
       db.run("UPDATE jugadores SET nivel = ?, EF = ?, EC = ? WHERE alias = ?", [nivel, EF, EC, alias], (err) => {
         if (err) console.error(err.message);
         console.log("Jugador editado correctamente");
-        io.emit("playerEdited", playerData);
       });
     });
   });
