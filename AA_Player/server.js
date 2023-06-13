@@ -51,7 +51,7 @@ function manejarEntrada(opcion) {
       break;
     case "0":
       // Salir
-      rl.close();
+      process.exit(0);
       return;
     default:
       console.log("Opción inválida");
