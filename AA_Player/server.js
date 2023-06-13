@@ -2,7 +2,6 @@ const readline = require("readline");
 const io = require("socket.io-client");
 
 const args = process.argv.slice(2);
-const port = 5000;
 const enginePort = args[0] ? parseInt(args[1], 10) : "http://localhost:3000";
 const kafkaPort = args[1] ? parseInt(args[2], 10) : "http://localhost:6000";
 const registryPort = args[2] ? parseInt(args[2], 10) : "http://localhost:7000";
@@ -20,22 +19,24 @@ const setRegion = {
   3: green,
 };
 
+let UsuarioLogeado = false;
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
 // Mostrar opciones por consola
-function mostrarMenu() {
+const mostrarMenu = () => {
   console.log("Seleccione una opción:");
   console.log("1. Crear un nuevo jugador");
   console.log("2. Editar un jugador existente");
   console.log("3. Unirse a la partida");
   console.log("0. Salir");
-}
+};
 
 // Manejar entrada del usuario
-function manejarEntrada(opcion) {
+const manejarEntrada = (opcion) => {
   switch (opcion) {
     case "1":
       // Crear un nuevo jugador
@@ -58,7 +59,32 @@ function manejarEntrada(opcion) {
       mostrarMenu();
       break;
   }
-}
+};
+
+// Manejar entrada del usuario
+const manejarEntradaPartida = (opcion) => {
+  switch (opcion) {
+    case "w":
+    case "x":
+    case "a":
+    case "d":
+    case "q":
+    case "e":
+    case "z":
+    case "c":
+      movimiento(opcion);
+      return;
+    default:
+      console.log("Movimiento inválido");
+      partidaIniciada();
+      break;
+  }
+};
+
+const movimiento = (opcion) => {
+  console.log(`Movimiento ${opcion}`);
+  partidaIniciada();
+};
 
 const registrarJugador = () => {
   // Establecer conexión con el servidor de registro
@@ -145,16 +171,23 @@ const unirsePartida = () => {
 
       socket.on("registrationSuccess", () => {
         console.log("Jugador autenticado correctamente");
+        UsuarioLogeado = true;
+        partidaIniciada();
       });
     });
   });
 };
 
-function padString(value, width) {
+const padString = (value, width) => {
   const stringValue = String(value);
   const padding = " ".repeat(width - stringValue.length);
   return stringValue + padding;
-}
+};
+
+const partidaIniciada = () => {
+  drawMap(map);
+  console.log("Mueve al jugador a una dirección: ");
+};
 
 const drawMap = (mapa) => {
   console.log(
@@ -170,7 +203,7 @@ const drawMap = (mapa) => {
   }
   console.log(numerosArriba);
   console.log(lineaArriba);
-  mapa.forEach((fila, i) => {
+  mapa.map.forEach((fila, i) => {
     let filaStr = "";
     filaStr += padString(i + 1, 3);
     filaStr += padString("| ", 3);
@@ -206,7 +239,8 @@ const drawMap = (mapa) => {
 mostrarMenu();
 // Leer la entrada del usuario
 rl.on("line", (input) => {
-  manejarEntrada(input.trim());
+  if (UsuarioLogeado) manejarEntradaPartida(input.trim());
+  else manejarEntrada(input.trim());
 });
 
 const map = {
