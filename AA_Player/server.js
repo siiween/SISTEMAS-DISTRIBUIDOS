@@ -124,7 +124,6 @@ const unirsePartida = () => {
     
         try{
           socket.emit("autPlayer", jugadorAut);
-          console.log("Jugador identificado correctamente");
         }catch (error){
           console.log(error);
         }
