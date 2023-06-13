@@ -29,7 +29,6 @@ app.post("/game/move", (req, res) => {
   res.send("Movimiento de jugador realizado");
 });
 
-
 // Endpoint para obtener información del clima
 app.get("/weather", async (req, res) => {
   try {
@@ -42,16 +41,11 @@ app.get("/weather", async (req, res) => {
   }
 });
 
-
 const server = http.createServer(app);
 const io = socketIO(server);
 
 io.on("connection", (socket) => {
- 
-
-  socket.on("disconnect", () => {
-    
-  });
+  socket.on("disconnect", () => {});
 
   socket.on("autPlayer", ({ alias, password }) => {
     if (!alias || !password) {
@@ -83,5 +77,3 @@ io.on("connection", (socket) => {
 server.listen(port, () => {
   console.log(`El servidor principal está escuchando en el puerto ${port}`);
 });
-
-
