@@ -62,22 +62,24 @@ io.on("connection", (socket) => {
         error: "Faltan los siguientes atributos: " + atributosFaltantes.join(", "),
       });
     }
-
+  
     // Verificar si el alias y password coinciden en la base de datos
     db.get("SELECT id FROM jugadores WHERE alias = ? AND password = ?", [alias, password], (err, row) => {
       if (err) console.error(err.message);
-
+  
       if (!row) {
         console.log("Alias o contraseña incorrectos");
-        return;
+        return socket.emit("registrationError", {
+          error: "Alias o contraseña incorrectos",
+        });
       }
-
+  
       // El alias y password coinciden, realizar acciones adicionales si es necesario
       console.log("Jugador autenticado correctamente");
-
-      // Resto de acciones adicionales, como enviar datos al cliente, etc.
+      socket.emit("registrationSuccess");
     });
   });
+  
 });
 
 server.listen(port, () => {

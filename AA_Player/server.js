@@ -114,28 +114,32 @@ const editarJugador = () => {
 };
 
 const unirsePartida = () => {
-
   console.log("Unirse a la partida");
 
   const socket = io(enginePort);
   rl.question("Alias: ", (alias) => {
     rl.question("Contraseña: ", (password) => {
-        const jugadorAut = { alias, password}
-    
-        try{
-          socket.emit("autPlayer", jugadorAut);
-        }catch (error){
-          console.log(error);
-        }
+      const jugadorAut = { alias, password };
 
-        rl.question("Presione enter para continuar...", () => {
-          mostrarMenu();
-        });
+      try {
+        socket.emit("autPlayer", jugadorAut);
+      } catch (error) {
+        console.log(error);
+      }
 
+      socket.on("registrationError", (data) => {
+        console.log("Error:", data.error);
+        mostrarMenu();
+      });
+
+      socket.on("registrationSuccess", () => {
+        console.log("Jugador autenticado correctamente");
+        mostrarMenu();
+      });
     });
   });
-
 };
+
 
 // Mostrar el menú inicial
 mostrarMenu();
