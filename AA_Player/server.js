@@ -6,19 +6,6 @@ const enginePort = args[0] ? parseInt(args[1], 10) : "http://localhost:3000";
 const kafkaPort = args[1] ? parseInt(args[2], 10) : "http://localhost:6000";
 const registryPort = args[2] ? parseInt(args[2], 10) : "http://localhost:7000";
 
-const reset = "\x1b[0m";
-const green = "\x1b[32m";
-const blue = "\x1b[34m";
-const magenta = "\x1b[35m";
-const cyan = "\x1b[36m";
-
-const setRegion = {
-  0: blue,
-  1: magenta,
-  2: cyan,
-  3: green,
-};
-
 let UsuarioLogeado = false;
 
 const rl = readline.createInterface({
@@ -178,12 +165,6 @@ const unirsePartida = () => {
   });
 };
 
-const padString = (value, width) => {
-  const stringValue = String(value);
-  const padding = " ".repeat(width - stringValue.length);
-  return stringValue + padding;
-};
-
 const partidaIniciada = () => {
   drawMap(map);
   console.log("Mueve al jugador a una dirección: ");
@@ -191,48 +172,98 @@ const partidaIniciada = () => {
 
 const drawMap = (mapa) => {
   console.log(
-    padString("", 6) +
-      padString(`${map.regions[0].name} ${map.regions[0].temperature} Cº`, 30) +
-      padString(`${map.regions[1].name} ${map.regions[1].temperature} Cº`, 30)
+    padString("", 5) +
+      padString(`${mapa.regions[0].name} ${mapa.regions[0].temperature}Cº`, 30) +
+      padString(`${mapa.regions[1].name} ${mapa.regions[1].temperature}Cº`, 30)
   );
-  let lineaArriba = padString("", 6);
-  let numerosArriba = padString("", 6);
+  let lineaArriba = padString("", 5);
+  let numerosArriba = padString("", 5);
   for (let i = 0; i < 20; i++) {
+    if (i === 0) {
+      lineaArriba += setRegion[0];
+    } else if (i === 10) {
+      lineaArriba += reset;
+      lineaArriba += setRegion[1];
+    }
     lineaArriba += padString("---", 3);
     numerosArriba += padString(i + 1, 3);
   }
+  lineaArriba += reset;
   console.log(numerosArriba);
   console.log(lineaArriba);
   mapa.map.forEach((fila, i) => {
     let filaStr = "";
     filaStr += padString(i + 1, 3);
-    filaStr += padString("| ", 3);
-    fila.forEach((casilla, i) => {
+
+    // ponemos colores a las lineas laterales
+    let region = 2;
+    if (i < 10) region = 0;
+    filaStr += setRegion[region];
+    filaStr += padString("| ", 2);
+    filaStr += reset;
+
+    fila.forEach((casilla) => {
       filaStr += setRegion[casilla.region];
 
       if (casilla.content.type === "Jugador") {
         filaStr += padString(casilla.content.identity[0], 3);
       } else if (casilla.content.type === "Mina") {
         filaStr += padString("M", 3);
+      } else if (casilla.content.type === "Alimento") {
+        filaStr += padString("A", 3);
       } else {
         filaStr += padString(" ", 3);
       }
 
       filaStr += reset;
     });
-    filaStr += padString(" |", 3);
-    filaStr += padString(i, 3);
+
+    // ponemos colores a las lineas laterales
+    region = 3;
+    if (i < 10) region = 1;
+    filaStr += setRegion[region];
+    filaStr += padString(" |", 2);
+    filaStr += reset;
+
+    filaStr += padString(i + 1, 3);
     console.log(filaStr);
   });
 
+  lineaArriba = padString("", 5);
+  numerosArriba = padString("", 5);
+  for (let i = 0; i < 20; i++) {
+    if (i === 0) {
+      lineaArriba += setRegion[2];
+    } else if (i === 10) {
+      lineaArriba += reset;
+      lineaArriba += setRegion[3];
+    }
+    lineaArriba += padString("---", 3);
+    numerosArriba += padString(i + 1, 3);
+  }
+  lineaArriba += reset;
   console.log(lineaArriba);
   console.log(numerosArriba);
 
   console.log(
-    padString("", 6) +
-      padString(`${map.regions[2].name} ${map.regions[2].temperature} Cº`, 30) +
-      padString(`${map.regions[3].name} ${map.regions[3].temperature} Cº`, 30)
+    padString("", 5) +
+      padString(`${mapa.regions[2].name} ${mapa.regions[2].temperature}Cº`, 30) +
+      padString(`${mapa.regions[3].name} ${mapa.regions[3].temperature}Cº`, 30)
   );
+};
+
+const reset = "\x1b[0m";
+const setRegion = {
+  0: "\x1b[34m",
+  1: "\x1b[35m",
+  2: "\x1b[36m",
+  3: "\x1b[32m",
+};
+
+const padString = (value, width) => {
+  const stringValue = String(value);
+  const padding = " ".repeat(width - stringValue.length);
+  return stringValue + padding;
 };
 
 // Mostrar el menú inicial

@@ -128,23 +128,37 @@ crearNuevoMapa();
 
 const drawMap = (mapa) => {
   console.log(
-    padString("", 6) +
-      padString(`${mapa.regions[0].name} ${mapa.regions[0].temperature} Cº`, 30) +
-      padString(`${mapa.regions[1].name} ${mapa.regions[1].temperature} Cº`, 30)
+    padString("", 5) +
+      padString(`${mapa.regions[0].name} ${mapa.regions[0].temperature}Cº`, 30) +
+      padString(`${mapa.regions[1].name} ${mapa.regions[1].temperature}Cº`, 30)
   );
-  let lineaArriba = padString("", 4);
-  let numerosArriba = padString("", 4);
+  let lineaArriba = padString("", 5);
+  let numerosArriba = padString("", 5);
   for (let i = 0; i < 20; i++) {
+    if (i === 0) {
+      lineaArriba += setRegion[0];
+    } else if (i === 10) {
+      lineaArriba += reset;
+      lineaArriba += setRegion[1];
+    }
     lineaArriba += padString("---", 3);
     numerosArriba += padString(i + 1, 3);
   }
+  lineaArriba += reset;
   console.log(numerosArriba);
   console.log(lineaArriba);
   mapa.map.forEach((fila, i) => {
     let filaStr = "";
     filaStr += padString(i + 1, 3);
-    filaStr += "|";
-    fila.forEach((casilla, i) => {
+
+    // ponemos colores a las lineas laterales
+    let region = 2;
+    if (i < 10) region = 0;
+    filaStr += setRegion[region];
+    filaStr += padString("| ", 2);
+    filaStr += reset;
+
+    fila.forEach((casilla) => {
       filaStr += setRegion[casilla.region];
 
       if (casilla.content.type === "Jugador") {
@@ -159,18 +173,38 @@ const drawMap = (mapa) => {
 
       filaStr += reset;
     });
-    filaStr += "|";
+
+    // ponemos colores a las lineas laterales
+    region = 3;
+    if (i < 10) region = 1;
+    filaStr += setRegion[region];
+    filaStr += padString(" |", 2);
+    filaStr += reset;
+
     filaStr += padString(i + 1, 3);
     console.log(filaStr);
   });
 
+  lineaArriba = padString("", 5);
+  numerosArriba = padString("", 5);
+  for (let i = 0; i < 20; i++) {
+    if (i === 0) {
+      lineaArriba += setRegion[2];
+    } else if (i === 10) {
+      lineaArriba += reset;
+      lineaArriba += setRegion[3];
+    }
+    lineaArriba += padString("---", 3);
+    numerosArriba += padString(i + 1, 3);
+  }
+  lineaArriba += reset;
   console.log(lineaArriba);
   console.log(numerosArriba);
 
   console.log(
-    padString("", 6) +
-      padString(`${mapa.regions[2].name} ${mapa.regions[2].temperature} Cº`, 30) +
-      padString(`${mapa.regions[3].name} ${mapa.regions[3].temperature} Cº`, 30)
+    padString("", 5) +
+      padString(`${mapa.regions[2].name} ${mapa.regions[2].temperature}Cº`, 30) +
+      padString(`${mapa.regions[3].name} ${mapa.regions[3].temperature}Cº`, 30)
   );
 };
 
