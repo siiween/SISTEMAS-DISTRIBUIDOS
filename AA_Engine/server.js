@@ -1,13 +1,55 @@
 const express = require("express");
+const http = require("http");
+const socketIO = require("socket.io");
 const app = express();
-const db = require("../database/db");
 const args = process.argv.slice(2);
 const port = args[0] ? parseInt(args[0], 10) : 3000;
 const maxPlayers = args[1] ? parseInt(args[1], 10) : 4;
+const db = require("../database/db");
 const axios = require("axios");
 
-// Crea las tablas si no existen
 app.use(express.json());
+
+const server = http.createServer(app);
+const io = socketIO(server);
+
+io.on("connection", (socket) => {
+  console.log("Nuevo cliente conectado");
+  socket.on("disconnect", () => {
+    console.log("Cliente desconectado");
+  });
+
+  socket.on("autPlayer", ({ alias, password }) => {
+    if (!alias || !password) {
+      const atributosFaltantes = [];
+      if (!alias) atributosFaltantes.push("alias");
+      if (!password) atributosFaltantes.push("password");
+      return socket.emit("registrationError", {
+        error: "Faltan los siguientes atributos: " + atributosFaltantes.join(", "),
+      });
+    }
+
+    // Verificar si el alias y password coinciden en la base de datos
+    db.get("SELECT id FROM jugadores WHERE alias = ? AND password = ?", [alias, password], (err, row) => {
+      if (err) console.error(err.message);
+
+      if (!row) {
+        console.log("Alias o contraseña incorrectos");
+        return socket.emit("registrationError", {
+          error: "Alias o contraseña incorrectos",
+        });
+      }
+
+      // El alias y password coinciden, realizar acciones adicionales si es necesario
+      console.log("Jugador autenticado correctamente");
+      socket.emit("registrationSuccess");
+    });
+  });
+});
+
+server.listen(port, () => {
+  console.log(`Servidor principal escuchando en el puerto ${port}`);
+});
 
 const ciudades = ["Tokio", "Roma", "Madrid", "Pekin", "Barcelona", "Murcia", "Burgos", "New York", "Londres"];
 
@@ -120,59 +162,14 @@ const crearNuevoMapa = async () => {
   }
 };
 
-const socketIO = require("socket.io");
-const http = require("http");
-const server = http.createServer(app);
-const io = socketIO(server);
-
-io.on("connection", (socket) => {
- 
-
-  socket.on("disconnect", () => {
-    
-  });
-
-  socket.on("autPlayer", ({ alias, password }) => {
-    if (!alias || !password) {
-      const atributosFaltantes = [];
-      if (!alias) atributosFaltantes.push("alias");
-      if (!password) atributosFaltantes.push("password");
-      return socket.emit("registrationError", {
-        error: "Faltan los siguientes atributos: " + atributosFaltantes.join(", "),
-      });
-    }
-  
-    // Verificar si el alias y password coinciden en la base de datos
-    db.get("SELECT id FROM jugadores WHERE alias = ? AND password = ?", [alias, password], (err, row) => {
-      if (err) console.error(err.message);
-  
-      if (!row) {
-        console.log("Alias o contraseña incorrectos");
-        return socket.emit("registrationError", {
-          error: "Alias o contraseña incorrectos",
-        });
-      }
-  
-      // El alias y password coinciden, realizar acciones adicionales si es necesario
-      console.log("Jugador autenticado correctamente");
-      socket.emit("registrationSuccess");
-    });
-  });
-  
-});
-
-
-
-app.listen(port, () => {
-  console.log(`El servidor principal está escuchando en el puerto ${port}`);
-});
-
 crearNuevoMapa();
 
 const drawMap = (mapa) => {
+  console.log("");
   console.log(
     padString("", 5) +
       padString(`${mapa.regions[0].name} ${mapa.regions[0].temperature}Cº`, 30) +
+      padString("", 4) +
       padString(`${mapa.regions[1].name} ${mapa.regions[1].temperature}Cº`, 30)
   );
   let lineaArriba = padString("", 5);
@@ -181,8 +178,9 @@ const drawMap = (mapa) => {
     if (i === 0) {
       lineaArriba += setRegion[0];
     } else if (i === 10) {
-      lineaArriba += reset;
+      lineaArriba += padString("", 4) + reset;
       lineaArriba += setRegion[1];
+      numerosArriba += padString("", 4);
     }
     lineaArriba += padString("---", 3);
     numerosArriba += padString(i + 1, 3);
@@ -191,9 +189,32 @@ const drawMap = (mapa) => {
   console.log(numerosArriba);
   console.log(lineaArriba);
   mapa.map.forEach((fila, i) => {
+    // lineas de enmedio horizontales
+    if (i === 10) {
+      let linea1 = padString("", 5);
+      let linea2 = padString("", 5);
+      for (let k = 0; k < 20; k++) {
+        if (k === 0) {
+          linea1 += setRegion[0];
+          linea2 += setRegion[2];
+        } else if (k === 10) {
+          linea1 += padString("", 4) + reset;
+          linea2 += padString("", 4) + reset;
+          linea1 += setRegion[1];
+          linea2 += setRegion[3];
+        }
+
+        linea1 += padString("---", 3);
+        linea2 += padString("---", 3);
+      }
+      linea1 += reset;
+      linea2 += reset;
+      console.log(linea1);
+      console.log(linea2);
+    }
+
     let filaStr = "";
     filaStr += padString(i + 1, 3);
-
     // ponemos colores a las lineas laterales
     let region = 2;
     if (i < 10) region = 0;
@@ -201,8 +222,12 @@ const drawMap = (mapa) => {
     filaStr += padString("| ", 2);
     filaStr += reset;
 
-    fila.forEach((casilla) => {
+    fila.forEach((casilla, j) => {
       filaStr += setRegion[casilla.region];
+
+      if (j === 10) {
+        filaStr += padString("|", 2);
+      }
 
       if (casilla.content.type === "Jugador") {
         filaStr += padString(casilla.content.identity[0], 3);
@@ -214,6 +239,10 @@ const drawMap = (mapa) => {
         filaStr += padString(" ", 3);
       }
 
+      if (j === 9) {
+        filaStr += padString("|", 2);
+      }
+
       filaStr += reset;
     });
 
@@ -223,30 +252,31 @@ const drawMap = (mapa) => {
     filaStr += setRegion[region];
     filaStr += padString(" |", 2);
     filaStr += reset;
-
-    filaStr += padString(i + 1, 3);
+    filaStr += padString(` ${i + 1}`, 3);
     console.log(filaStr);
   });
 
-  lineaArriba = padString("", 5);
-  numerosArriba = padString("", 5);
+  let lineaAbajo = padString("", 5);
+  let numerosAbajo = padString("", 5);
   for (let i = 0; i < 20; i++) {
     if (i === 0) {
-      lineaArriba += setRegion[2];
+      lineaAbajo += setRegion[2];
     } else if (i === 10) {
-      lineaArriba += reset;
-      lineaArriba += setRegion[3];
+      lineaAbajo += padString("", 4) + reset;
+      lineaAbajo += setRegion[3];
+      numerosAbajo += padString("", 4);
     }
-    lineaArriba += padString("---", 3);
-    numerosArriba += padString(i + 1, 3);
+    lineaAbajo += padString("---", 3);
+    numerosAbajo += padString(i + 1, 3);
   }
-  lineaArriba += reset;
-  console.log(lineaArriba);
-  console.log(numerosArriba);
+  lineaAbajo += reset;
+  console.log(lineaAbajo);
+  console.log(numerosAbajo);
 
   console.log(
     padString("", 5) +
       padString(`${mapa.regions[2].name} ${mapa.regions[2].temperature}Cº`, 30) +
+      padString("", 4) +
       padString(`${mapa.regions[3].name} ${mapa.regions[3].temperature}Cº`, 30)
   );
 };

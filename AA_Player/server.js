@@ -2,8 +2,8 @@ const readline = require("readline");
 const io = require("socket.io-client");
 
 const args = process.argv.slice(2);
-const enginePort = args[0] ? parseInt(args[1], 10) : "http://localhost:3000";
-const kafkaPort = args[1] ? parseInt(args[2], 10) : "http://localhost:6000";
+const enginePort = args[0] ? parseInt(args[0], 10) : "http://localhost:3000";
+const kafkaPort = args[1] ? parseInt(args[1], 10) : "http://localhost:6000";
 const registryPort = args[2] ? parseInt(args[2], 10) : "http://localhost:7000";
 
 let UsuarioLogeado = false;
@@ -40,7 +40,6 @@ const manejarEntrada = (opcion) => {
     case "0":
       // Salir
       process.exit(0);
-      return;
     default:
       console.log("Opción inválida");
       mostrarMenu();
@@ -108,7 +107,7 @@ const registrarJugador = () => {
 
 const editarJugador = () => {
   // Establecer conexión con el servidor de registro
-  const socket = io(registryPort);
+  const socket = io("registryPort");
 
   rl.question("Alias: ", (alias) => {
     rl.question("Contraseña: ", (password) => {
@@ -140,7 +139,9 @@ const editarJugador = () => {
 };
 
 const unirsePartida = () => {
+  // Establecer conexión con el servidor de registro
   const socket = io(enginePort);
+
   rl.question("Alias: ", (alias) => {
     rl.question("Contraseña: ", (password) => {
       const jugadorAut = { alias, password };
