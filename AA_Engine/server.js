@@ -120,6 +120,49 @@ const crearNuevoMapa = async () => {
   }
 };
 
+const socketIO = require("socket.io");
+const http = require("http");
+const server = http.createServer(app);
+const io = socketIO(server);
+
+io.on("connection", (socket) => {
+ 
+
+  socket.on("disconnect", () => {
+    
+  });
+
+  socket.on("autPlayer", ({ alias, password }) => {
+    if (!alias || !password) {
+      const atributosFaltantes = [];
+      if (!alias) atributosFaltantes.push("alias");
+      if (!password) atributosFaltantes.push("password");
+      return socket.emit("registrationError", {
+        error: "Faltan los siguientes atributos: " + atributosFaltantes.join(", "),
+      });
+    }
+  
+    // Verificar si el alias y password coinciden en la base de datos
+    db.get("SELECT id FROM jugadores WHERE alias = ? AND password = ?", [alias, password], (err, row) => {
+      if (err) console.error(err.message);
+  
+      if (!row) {
+        console.log("Alias o contraseña incorrectos");
+        return socket.emit("registrationError", {
+          error: "Alias o contraseña incorrectos",
+        });
+      }
+  
+      // El alias y password coinciden, realizar acciones adicionales si es necesario
+      console.log("Jugador autenticado correctamente");
+      socket.emit("registrationSuccess");
+    });
+  });
+  
+});
+
+
+
 app.listen(port, () => {
   console.log(`El servidor principal está escuchando en el puerto ${port}`);
 });
