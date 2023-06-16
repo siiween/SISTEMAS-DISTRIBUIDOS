@@ -1,13 +1,14 @@
+const util = require("./util");
 const readline = require("readline");
 const io = require("socket.io-client");
+// Lectura del terminal, parametros
 const args = process.argv.slice(2);
 const enginePort = args[0] ? parseInt(args[0], 10) : "http://localhost:3000";
 const kafkaPort = args[1] ? parseInt(args[1], 10) : "http://localhost:6000";
 const registryPort = args[2] ? parseInt(args[2], 10) : "http://localhost:7000";
+// estado de la partida
 let mapaActual = null;
 let UsuarioLogeado = false;
-
-const util = require("./util");
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -15,7 +16,7 @@ const rl = readline.createInterface({
 });
 
 // Manejar entrada del usuario
-const manejarEntrada = (opcion) => {
+const manejarEntradaInicial = (opcion) => {
   switch (opcion) {
     case "1":
       // Crear un nuevo jugador
@@ -39,6 +40,34 @@ const manejarEntrada = (opcion) => {
   }
 };
 
+const manejarEntradaPartida = (opcion) => {
+  switch (opcion) {
+    case "w":
+    case "x":
+    case "a":
+    case "d":
+    case "q":
+    case "e":
+    case "z":
+    case "c":
+      movimiento(opcion);
+      return;
+    default:
+      console.log("Movimiento inválido");
+      partidaIniciada();
+      break;
+  }
+};
+
+const partidaIniciada = () => {
+  util.drawMap(mapaActual);
+  console.log("Mueve al jugador a una dirección: ");
+};
+
+const movimiento = (opcion) => {
+  console.log(`Movimiento ${opcion}`);
+  partidaIniciada();
+};
 
 const registrarJugador = () => {
   // Establecer conexión con el servidor de registro
@@ -131,7 +160,7 @@ const unirsePartida = () => {
         if (e.status) {
           console.log(e.message);
           mapaActual = e.map;
-          util.partidaIniciada(mapaActual);
+          partidaIniciada(mapaActual);
         } else {
           console.log(e.message);
           console.log("Esperando a inciar partida... pulsa 0 para salir de la cola de espera");
@@ -141,13 +170,10 @@ const unirsePartida = () => {
   });
 };
 
-
 // Mostrar el menú inicial
 util.mostrarMenu();
 // Leer la entrada del usuario
 rl.on("line", (input) => {
-  if (UsuarioLogeado) util.manejarEntradaPartida(input.trim());
-  else manejarEntrada(input.trim());
+  if (UsuarioLogeado) manejarEntradaPartida(input.trim());
+  else manejarEntradaInicial(input.trim());
 });
-
-
