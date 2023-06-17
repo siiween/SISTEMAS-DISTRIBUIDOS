@@ -68,7 +68,6 @@ const movimiento = (opcion) => {
   console.log(`Movimiento ${opcion}`);
   partidaIniciada();
 };
-
 const registrarJugador = () => {
   // Establecer conexión con el servidor de registro
   const socket = io(registryPort);
@@ -85,15 +84,20 @@ const registrarJugador = () => {
               EF: ef,
               EC: ec,
             };
+            
             // Enviar evento de creación de jugador al servidor de registro
-            try {
-              socket.emit("createPlayer", jugador);
-              console.log("Jugador creado con éxito");
-            } catch (error) {
-              console.log(error);
-            }
-            rl.question("Presione enter para continuar...", () => {
-              util.mostrarMenu();
+            socket.emit("createPlayer", jugador);
+
+            // Escuchar evento de respuesta del servidor de registro
+            socket.on("registrationResponse", (response) => {
+              if (response.success) {
+                console.log("Jugador creado con éxito");
+              } else {
+                console.log(response.error);
+              }
+              rl.question("Presione enter para continuar...", () => {
+                util.mostrarMenu();
+              });
             });
           });
         });
@@ -104,7 +108,7 @@ const registrarJugador = () => {
 
 const editarJugador = () => {
   // Establecer conexión con el servidor de registro
-  const socket = io("registryPort");
+  const socket = io(registryPort);
 
   rl.question("Alias: ", (alias) => {
     rl.question("Contraseña: ", (password) => {
@@ -124,6 +128,7 @@ const editarJugador = () => {
               console.log("Jugador editado correctamente");
             } catch (error) {
               console.log(error);
+              console.log("Error al editar el jugador");
             }
             rl.question("Presione enter para continuar...", () => {
               util.mostrarMenu();
@@ -134,6 +139,7 @@ const editarJugador = () => {
     });
   });
 };
+
 
 const unirsePartida = () => {
   // Establecer conexión con el servidor de registro
@@ -147,6 +153,7 @@ const unirsePartida = () => {
         socket.emit("autPlayer", jugadorAut);
       } catch (error) {
         console.log(error);
+        console.log("Error al enviar la autenticación del jugador");
       }
 
       socket.on("registrationError", (data) => {
@@ -163,7 +170,7 @@ const unirsePartida = () => {
           partidaIniciada(mapaActual);
         } else {
           console.log(e.message);
-          console.log("Esperando a inciar partida... pulsa 0 para salir de la cola de espera");
+          console.log("Esperando para iniciar partida... pulsa 0 para salir de la cola de espera");
         }
       });
     });
