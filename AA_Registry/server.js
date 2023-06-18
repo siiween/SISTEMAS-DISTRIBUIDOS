@@ -37,42 +37,44 @@ io.on("connection", (socket) => {
         socket.emit("registrationResponse", response);
       } else {
         // El alias no existe, registrar el jugador
-        db.run("INSERT INTO jugadores (alias, password, nivel, EF, EC) VALUES (?, ?, ?, ?, ?)", [jugador.alias, jugador.password, jugador.nivel, jugador.EF, jugador.EC], (err) => {
-          if (err) {
-            console.error(err.message);
-            const response = {
-              success: false,
-              error: "Error al crear el jugador",
-            };
-            socket.emit("registrationResponse", response);
-          } else {
-            console.log("Jugador registrado correctamente");
-            const response = {
-              success: true,
-            };
-            socket.emit("registrationResponse", response);
-            const playerData = { alias: jugador.alias, password: jugador.password, nivel: jugador.nivel, EF: jugador.EF, EC: jugador.EC };
-            io.emit("playerRegistered", playerData);
+        db.run(
+          "INSERT INTO jugadores (alias, password, nivel, EF, EC) VALUES (?, ?, ?, ?, ?)",
+          [jugador.alias, jugador.password, jugador.nivel, jugador.EF, jugador.EC],
+          (err) => {
+            if (err) {
+              console.error(err.message);
+              const response = {
+                success: false,
+                error: "Error al crear el jugador",
+              };
+              socket.emit("registrationResponse", response);
+            } else {
+              console.log("Jugador registrado correctamente");
+              const response = {
+                success: true,
+              };
+              socket.emit("registrationResponse", response);
+              const playerData = { alias: jugador.alias, password: jugador.password, nivel: jugador.nivel, EF: jugador.EF, EC: jugador.EC };
+              io.emit("playerRegistered", playerData);
+            }
           }
-        });
+        );
       }
     });
   });
-  
 
-  socket.on("editPlayer", ({ alias, password, nivel, EF, EC }) => {
-    if (!alias || !password || !nivel || !EF || !EC) {
+  socket.on("editPlayer", ({ alias, password, EF, EC }) => {
+    if (!alias || !password || !EF || !EC) {
       const atributosFaltantes = [];
       if (!alias) atributosFaltantes.push("alias");
       if (!password) atributosFaltantes.push("password");
-      if (!nivel) atributosFaltantes.push("nivel");
       if (!EF) atributosFaltantes.push("EF");
       if (!EC) atributosFaltantes.push("EC");
       return socket.emit("registrationError", {
         error: "Faltan los siguientes atributos: " + atributosFaltantes.join(", "),
       });
     }
-  
+
     // Verificar si el alias existe en la base de datos
     db.get("SELECT id FROM jugadores WHERE alias = ? and password = ?", [alias, password], (err, row) => {
       if (err) {
@@ -81,18 +83,10 @@ io.on("connection", (socket) => {
           error: "Error en la consulta a la base de datos",
         });
       }
-  
       if (!row) {
-        // El alias no existe, registrar el jugador
-        db.run("INSERT INTO jugadores (alias, password, nivel, EF, EC) VALUES (?, ?, ?, ?, ?)", [alias, password, nivel, EF, EC], (err) => {
-          if (err) {
-            console.error(err.message);
-            return socket.emit("registrationError", {
-              error: "Error al crear el jugador",
-            });
-          }
-          console.log(`El jugador ${alias} no existía, se ha creado correctamente`);
-          socket.emit("playerEdited", { created: true });
+        console.error(err.message);
+        return socket.emit("registrationError", {
+          error: "Error al editar el jugador",
         });
       } else {
         // El alias existe, editar al jugador
@@ -109,8 +103,6 @@ io.on("connection", (socket) => {
       }
     });
   });
-  
-  
 });
 
 server.listen(port, () => {

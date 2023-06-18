@@ -68,50 +68,49 @@ const movimiento = (opcion) => {
   console.log(`Movimiento ${opcion}`);
   partidaIniciada();
 };
+
 const registrarJugador = () => {
   rl.question("Alias: ", (alias) => {
     rl.question("Contraseña: ", (password) => {
-      rl.question("Nivel: ", (nivel) => {
-        rl.question("EF: ", (ef) => {
-          rl.question("EC: ", (ec) => {
-            const jugador = {
-              alias,
-              password,
-              nivel,
-              EF: ef,
-              EC: ec,
-            };
-            // Establecer conexión con el servidor de registro
-            const socket = io(registryPort);
-            // Bandera para controlar si se ha recibido una respuesta del servidor de registro
-            let respuestaRecibida = false;
-            // Enviar evento de creación de jugador al servidor de registro
-            socket.emit("createPlayer", jugador);
-            // Escuchar evento de respuesta del servidor de registro
-            socket.on("registrationResponse", (response) => {
-              // Se ha recibido una respuesta, se cancela el temporizador
-              clearTimeout(timeout);
-              if (!respuestaRecibida) {
-                respuestaRecibida = true;
-                if (response.success) {
-                  console.log("Jugador creado con éxito");
-                } else {
-                  console.log(response.error);
-                }
-                rl.question("Presione enter para continuar...", () => {
-                  util.mostrarMenu();
-                });
+      rl.question("EF: ", (ef) => {
+        rl.question("EC: ", (ec) => {
+          const jugador = {
+            alias,
+            password,
+            nivel: 1,
+            EF: ef,
+            EC: ec,
+          };
+          // Establecer conexión con el servidor de registro
+          const socket = io(registryPort);
+          // Bandera para controlar si se ha recibido una respuesta del servidor de registro
+          let respuestaRecibida = false;
+          // Enviar evento de creación de jugador al servidor de registro
+          socket.emit("createPlayer", jugador);
+          // Escuchar evento de respuesta del servidor de registro
+          socket.on("registrationResponse", (response) => {
+            // Se ha recibido una respuesta, se cancela el temporizador
+            clearTimeout(timeout);
+            if (!respuestaRecibida) {
+              respuestaRecibida = true;
+              if (response.success) {
+                console.log("Jugador creado con éxito");
+              } else {
+                console.log(response.error);
               }
-            });
-            const timeout = setTimeout(() => {
-              if (!respuestaRecibida) {
-                console.log("El servidor de registro no está disponible en este momento");
-                rl.question("Presione enter para continuar...", () => {
-                  util.mostrarMenu();
-                });
-              }
-            }, 5000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
+              rl.question("Presione enter para continuar...", () => {
+                util.mostrarMenu();
+              });
+            }
           });
+          const timeout = setTimeout(() => {
+            if (!respuestaRecibida) {
+              console.log("El servidor de registro no está disponible en este momento");
+              rl.question("Presione enter para continuar...", () => {
+                util.mostrarMenu();
+              });
+            }
+          }, 5000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
         });
       });
     });
@@ -121,64 +120,54 @@ const registrarJugador = () => {
 const editarJugador = () => {
   rl.question("Alias: ", (alias) => {
     rl.question("Contraseña: ", (password) => {
-      rl.question("Nivel: ", (nivel) => {
-        rl.question("EF: ", (ef) => {
-          rl.question("EC: ", (ec) => {
-            const jugador = {
-              alias,
-              password,
-              nivel,
-              EF: ef,
-              EC: ec,
-            };
-
-            // Establecer conexión con el servidor de registro
-            const socket = io(registryPort);
-
-            // Bandera para controlar si se ha recibido una respuesta del servidor de registro
-            let respuestaRecibida = false;
-
-            try {
-              // Enviar evento de edición de jugador al servidor de registro
-              socket.emit("editPlayer", jugador);
-
-              // Escuchar evento de respuesta del servidor de registro
-              socket.on("editPlayerResponse", (response) => {
-                // Se ha recibido una respuesta, se cancela el temporizador
-                clearTimeout(timeout);
-
-                if (!respuestaRecibida) {
-                  respuestaRecibida = true;
-
-                  if (response.success) {
-                    console.log("Jugador editado correctamente");
-                  } else {
-                    console.log(response.error);
-                    console.log("Error al editar el jugador");
-                  }
-
-                  rl.question("Presione enter para continuar...", () => {
-                    util.mostrarMenu();
-                  });
+      rl.question("EF: ", (ef) => {
+        rl.question("EC: ", (ec) => {
+          const jugador = {
+            alias,
+            password,
+            EF: ef,
+            EC: ec,
+          };
+          // Establecer conexión con el servidor de registro
+          const socket = io(registryPort);
+          // Bandera para controlar si se ha recibido una respuesta del servidor de registro
+          let respuestaRecibida = false;
+          try {
+            // Enviar evento de edición de jugador al servidor de registro
+            socket.emit("editPlayer", jugador);
+            // Escuchar evento de respuesta del servidor de registro
+            socket.on("editPlayerResponse", (response) => {
+              // Se ha recibido una respuesta, se cancela el temporizador
+              clearTimeout(timeout);
+              if (!respuestaRecibida) {
+                respuestaRecibida = true;
+                if (response.success) {
+                  console.log("Jugador editado correctamente");
+                } else {
+                  console.log(response.error);
+                  console.log("Error al editar el jugador");
                 }
-              });
+                rl.question("Presione enter para continuar...", () => {
+                  util.mostrarMenu();
+                });
+              }
+            });
 
-              const timeout = setTimeout(() => {
-                if (!respuestaRecibida) {
-                  console.log("El servidor de registro no está disponible en este momento");
-                  rl.question("Presione enter para continuar...", () => {
-                    util.mostrarMenu();
-                  });
-                }
-              }, 5000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
-            } catch (error) {
-              console.log(error);
-              console.log("Error al editar el jugador");
-              rl.question("Presione enter para continuar...", () => {
-                util.mostrarMenu();
-              });
-            }
-          });
+            const timeout = setTimeout(() => {
+              if (!respuestaRecibida) {
+                console.log("El servidor de registro no está disponible en este momento");
+                rl.question("Presione enter para continuar...", () => {
+                  util.mostrarMenu();
+                });
+              }
+            }, 5000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
+          } catch (error) {
+            console.log(error);
+            console.log("Error al editar el jugador");
+            rl.question("Presione enter para continuar...", () => {
+              util.mostrarMenu();
+            });
+          }
         });
       });
     });
@@ -189,37 +178,29 @@ const unirsePartida = () => {
   rl.question("Alias: ", (alias) => {
     rl.question("Contraseña: ", (password) => {
       const jugadorAut = { alias, password };
-
       // Establecer conexión con el servidor de registro
       const socket = io(enginePort);
-
       // Bandera para controlar si se ha recibido una respuesta del servidor de registro
       let respuestaRecibida = false;
-
       try {
         // Enviar evento de autenticación de jugador al servidor de registro
         socket.emit("autPlayer", jugadorAut);
-
         // Escuchar eventos de respuesta del servidor de registro
         socket.on("registrationError", (data) => {
           // Se ha recibido una respuesta, se cancela el temporizador
           clearTimeout(timeout);
-
           if (!respuestaRecibida) {
             respuestaRecibida = true;
             console.log("Error:", data.error);
             util.mostrarMenu();
           }
         });
-
         socket.on("registrationSuccess", (e) => {
           // Se ha recibido una respuesta, se cancela el temporizador
           clearTimeout(timeout);
-
           if (!respuestaRecibida) {
             respuestaRecibida = true;
             UsuarioLogeado = true;
-
             if (e.status) {
               console.log(e.message);
               mapaActual = e.map;
