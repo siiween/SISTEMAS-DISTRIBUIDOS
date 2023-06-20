@@ -55,57 +55,30 @@ io.on("connection", (socket) => {
 
       // El alias y password coinciden, realizar acciones adicionales si es necesario
       console.log("Jugador autenticado correctamente");
-      JugadorAlias = alias;
-
-      util
-        .getMapaFromDatabase(idPartida)
-        .then((mapaJSON) => {
-          if (maxPlayers === mapaJSON.players.length) {
-            socket.emit("registrationError", {
-              error: "Partida llena",
-            });
-          } else {
-            let x = Math.floor(Math.random() * 20);
-            let y = Math.floor(Math.random() * 20);
-            while (mapaJSON.map[x][y].content.type !== null) {
-              x = Math.floor(Math.random() * 20);
-              y = Math.floor(Math.random() * 20);
-            }
-
-            const user = { id: alias, level: 1, position: { x: x, y: y }, EF: 1, EC: 0 };
-            mapaJSON.players.push(user);
-            mapaJSON.map[x][y].content = { type: "Jugador", id: alias, level: 1 };
-
-            // Guardar el nuevo mapa en la base de datos
-            db.run("UPDATE Mapa SET Mapa = ? WHERE ID = ?", [JSON.stringify(mapaJSON), idPartida], function (err) {
-              if (err) {
-                console.error("Error al guardar el nuevo mapa:", err.message);
-              } else {
-                console.log("Mapa actualizado ID:", idPartida);
-              }
-            });
-
+      if (iniciarPartida) {
+        util
+          .getMapaFromDatabase(idPartida)
+          .then((mapaJSON) => {
             socket.emit("registrationSuccess", {
               status: true,
               message: "Partida iniciada",
               map: mapaJSON,
             });
-          }
-        })
-        .catch((error) => {
-          console.error("Error al recuperar el mapa:", error);
-          socket.emit("registrationError", {
-            error: "Error al recuperar el mapa",
+          })
+          .catch((error) => {
+            console.error("Error al recuperar el mapa:", error);
+            socket.emit("registrationError", {
+              error: "Error al recuperar el mapa",
+            });
           });
+      } else {
+        socket.emit("registrationSuccess", {
+          status: false,
+          message: "Partida no iniciada",
         });
+      }
     });
   });
-});
-
-// kafka consumer
-const kafka = new Kafka({
-  clientId: "my-kafka-app",
-  brokers: ["localhost:9092"],
 });
 
 const consumer = kafka.consumer({ groupId: "test-group" });
