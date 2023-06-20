@@ -1,6 +1,7 @@
 const util = require("./util");
 const readline = require("readline");
 const io = require("socket.io-client");
+const { Kafka } = require("kafkajs");
 // Lectura del terminal, parametros
 const args = process.argv.slice(2);
 const enginePort = args[0] ? parseInt(args[0], 10) : "http://localhost:3000";
@@ -9,6 +10,7 @@ const registryPort = args[2] ? parseInt(args[2], 10) : "http://localhost:7000";
 // estado de la partida
 let mapaActual = null;
 let UsuarioLogeado = false;
+let userName = null;
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -19,19 +21,15 @@ const rl = readline.createInterface({
 const manejarEntradaInicial = (opcion) => {
   switch (opcion) {
     case "1":
-      // Crear un nuevo jugador
       registrarJugador();
       break;
     case "2":
-      // Editar un jugador
       editarJugador();
       break;
     case "3":
-      // Unirse a la partida
       unirsePartida();
       break;
     case "0":
-      // Salir
       process.exit(0);
     default:
       console.log("Opción inválida");
@@ -204,6 +202,7 @@ const unirsePartida = () => {
             if (e.status) {
               console.log(e.message);
               mapaActual = e.map;
+              userName = alias;
               partidaIniciada(mapaActual);
             } else {
               console.log(e.message);
@@ -230,6 +229,23 @@ const unirsePartida = () => {
     });
   });
 };
+
+async function run() {
+  const kafka = new Kafka({
+    clientId: "my-kafka-app",
+    brokers: ["localhost:9092"],
+  });
+
+  const producer = kafka.producer();
+  await producer.connect();
+  await producer.send({
+    topic: "my-topic",
+    messages: [{ value: "Hello Kafka!" }],
+  });
+  await producer.disconnect();
+}
+
+run().catch(console.error);
 
 // Mostrar el menú inicial
 util.mostrarMenu();

@@ -15,6 +15,7 @@ const padString = (value, width) => {
 
 const drawMap = (mapa) => {
   console.clear();
+
   if (mapa) {
     console.log("");
     console.log(
@@ -81,11 +82,17 @@ const drawMap = (mapa) => {
         }
 
         if (casilla.content.type === "Jugador") {
-          filaStr += padString(casilla.content.identity[0], 3);
+          filaStr += reset;
+          filaStr += padString(`${casilla.content.id[0]}${casilla.content.level}`, 3);
+          filaStr += setRegion[casilla.region];
         } else if (casilla.content.type === "Mina") {
           filaStr += padString("M", 3);
         } else if (casilla.content.type === "Alimento") {
           filaStr += padString("A", 3);
+        } else if (casilla.content.type === "NPC") {
+          filaStr += setRegion[4];
+          filaStr += padString(casilla.content.level, 3);
+          filaStr += setRegion[casilla.region];
         } else {
           filaStr += padString(" ", 3);
         }
@@ -140,6 +147,7 @@ const setRegion = {
   1: "\x1b[35m",
   2: "\x1b[36m",
   3: "\x1b[32m",
+  4: "\x1b[31m",
 };
 
 const reset = "\x1b[0m";

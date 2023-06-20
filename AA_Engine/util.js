@@ -31,6 +31,7 @@ const crearNuevoMapa = async () => {
           regions: regions,
           map: map,
           players: [],
+          NPCs: [],
         }),
       ],
       function (err) {
