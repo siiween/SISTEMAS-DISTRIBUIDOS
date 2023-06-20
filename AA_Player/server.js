@@ -1,7 +1,6 @@
 const util = require("./util");
 const readline = require("readline");
 const io = require("socket.io-client");
-const { Kafka } = require("kafkajs");
 // Lectura del terminal, parametros
 const args = process.argv.slice(2);
 const enginePort = args[0] ? parseInt(args[0], 10) : "http://localhost:3000";
@@ -57,14 +56,14 @@ const manejarEntradaPartida = (opcion) => {
   }
 };
 
-const partidaIniciada = () => {
+const partidaIniciada = (opcion) => {
   util.drawMap(mapaActual);
+  console.log("ultimo movimiento: " + opcion);
   console.log("Mueve al jugador a una dirección: ");
 };
 
 const movimiento = (opcion) => {
-  console.log(`Movimiento ${opcion}`);
-  partidaIniciada();
+  partidaIniciada(opcion);
 };
 
 const registrarJugador = () => {
@@ -229,23 +228,6 @@ const unirsePartida = () => {
     });
   });
 };
-
-async function run() {
-  const kafka = new Kafka({
-    clientId: "my-kafka-app",
-    brokers: ["localhost:9092"],
-  });
-
-  const producer = kafka.producer();
-  await producer.connect();
-  await producer.send({
-    topic: "my-topic",
-    messages: [{ value: "Hello Kafka!" }],
-  });
-  await producer.disconnect();
-}
-
-run().catch(console.error);
 
 // Mostrar el menú inicial
 util.mostrarMenu();
