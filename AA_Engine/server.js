@@ -141,6 +141,31 @@ io.on("connection", (socket) => {
                 mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
               }
 
+            case "q":
+              if (jugador.position.x - 1 >= 0 && jugador.position.y - 1 >= 0) {
+                mapaJSON.map[jugador.position.y - 1][jugador.position.x - 1].content = { type: "Jugador", id: jugador.id, level: jugador.level };
+                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
+              }
+              break;
+            case "e":
+              if (jugador.position.x + 1 < 20 && jugador.position.y - 1 >= 0) {
+                mapaJSON.map[jugador.position.y - 1][jugador.position.x + 1].content = { type: "Jugador", id: jugador.id, level: jugador.level };
+                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
+              }
+              break;
+            case "z":
+              if (jugador.position.x - 1 >= 0 && jugador.position.y + 1 < 20) {
+                mapaJSON.map[jugador.position.y + 1][jugador.position.x - 1].content = { type: "Jugador", id: jugador.id, level: jugador.level };
+                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
+              }
+              break;
+            case "c":
+              if (jugador.position.x + 1 < 20 && jugador.position.y + 1 < 20) {
+                mapaJSON.map[jugador.position.y + 1][jugador.position.x + 1].content = { type: "Jugador", id: jugador.id, level: jugador.level };
+                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
+              }
+              break;
+
             default:
               break;
           }
@@ -163,6 +188,31 @@ io.on("connection", (socket) => {
                 // izquierda
                 case "a":
                   if (player.position.x - 1 >= 0) player.position.x -= 1;
+                  break;
+                case "q":
+                  if (player.position.x - 1 >= 0 && player.position.y - 1 >= 0) {
+                    player.position.x -= 1;
+                    player.position.y -= 1;
+                  }
+                  break;
+                case "e":
+                  if (player.position.x + 1 < 20 && player.position.y - 1 >= 0) {
+                    player.position.x += 1;
+                    player.position.y -= 1;
+                  }
+                  break;
+                case "z":
+                  if (player.position.x - 1 >= 0 && player.position.y + 1 < 20) {
+                    player.position.x -= 1;
+                    player.position.y += 1;
+                  }
+                  break;
+                case "c":
+                  if (player.position.x + 1 < 20 && player.position.y + 1 < 20) {
+                    player.position.x += 1;
+                    player.position.y += 1;
+                  }
+                  break;
                 default:
                   break;
               }
