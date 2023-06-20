@@ -11,6 +11,8 @@ let mapaActual = null;
 let UsuarioLogeado = false;
 let userName = null;
 
+const socket = io(enginePort);
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -56,14 +58,42 @@ const manejarEntradaPartida = (opcion) => {
   }
 };
 
-const partidaIniciada = (opcion) => {
+const partidaIniciada = () => {
   util.drawMap(mapaActual);
-  console.log("ultimo movimiento: " + opcion);
   console.log("Mueve al jugador a una dirección: ");
 };
 
 const movimiento = (opcion) => {
-  partidaIniciada(opcion);
+  if (userName) {
+    // Bandera para controlar si se ha recibido una respuesta del servidor de registro
+    let respuestaRecibida = false;
+    try {
+      socket.emit("movePlayer", { userName, opcion });
+      // Escuchar eventos de respuesta del servidor de registro
+      socket.on("movePlayerResponse", (response) => {
+        // Se ha recibido una respuesta, se cancela el temporizador
+        clearTimeout(timeout);
+        if (!respuestaRecibida) {
+          respuestaRecibida = true;
+          mapaActual = response.map;
+        }
+
+        partidaIniciada();
+        console.log("ultimo movimiento: " + opcion);
+      });
+      const timeout = setTimeout(() => {
+        if (!respuestaRecibida) {
+          console.log("El servidor de Juego no está disponible en este momento");
+          rl.question("Presione enter para continuar...", () => {
+            util.mostrarMenu();
+          });
+        }
+      }, 5000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
+    } catch (error) {
+      console.log(error);
+      console.log("Error al enviar lel movimiento del jugador");
+    }
+  }
 };
 
 const registrarJugador = () => {
@@ -175,8 +205,6 @@ const unirsePartida = () => {
   rl.question("Alias: ", (alias) => {
     rl.question("Contraseña: ", (password) => {
       const jugadorAut = { alias, password };
-      // Establecer conexión con el servidor de registro
-      const socket = io(enginePort);
       // Bandera para controlar si se ha recibido una respuesta del servidor de registro
       let respuestaRecibida = false;
       try {
@@ -202,7 +230,7 @@ const unirsePartida = () => {
               console.log(e.message);
               mapaActual = e.map;
               userName = alias;
-              partidaIniciada(mapaActual);
+              partidaIniciada();
             } else {
               console.log(e.message);
               console.log("Esperando para iniciar partida... pulsa 0 para salir de la cola de espera");
