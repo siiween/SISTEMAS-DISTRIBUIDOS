@@ -75,32 +75,38 @@ const HomePage = () => {
       <div className="w-1/3 h-screen bg-gray-800 py-12 px-5">
         <p className="text-2xl font-semibold text-neutral-100 text-center mb-10">JUGADORES AGAINST ALL</p>
 
-        {!isLoading && !error && data.map.players && (
-          <>
-            <div className="w-full flex bg-gray-950 rounded-t py-2 px-3">
-              <p className="text-white text-base w-1/5">ID</p>
-              <p className="text-white text-base w-1/5 ">LEVEL</p>
-              <p className="text-white text-base w-1/5 ">EC</p>
-              <p className="text-white text-base w-1/5 ">EF</p>
-              <p className="text-white text-base w-1/5 ">POSITION</p>
-            </div>
-            {data.map.players.map((jugador) => (
-              <div className="w-full flex bg-gray-900 py-2 px-3">
-                <p className="text-white text-base w-1/5 ">{jugador.id}</p>
-                <p className="text-white text-base w-1/5 ">{jugador.level}</p>
-                <p className="text-white text-base w-1/5 ">{jugador.EC}</p>
-                <p className="text-white text-base w-1/5 ">{jugador.EF}</p>
-                <p className="text-white text-base w-1/5 ">
-                  [{jugador.position.x}, {jugador.position.y}]
-                </p>
+        {!isLoading && !error && data.map.players ? (
+          data.map.players.length > 0 ? (
+            <>
+              <div className="w-full flex bg-gray-950 rounded-t py-2 px-3">
+                <p className="text-white text-base w-1/5">ID</p>
+                <p className="text-white text-base w-1/5 ">LEVEL</p>
+                <p className="text-white text-base w-1/5 ">EC</p>
+                <p className="text-white text-base w-1/5 ">EF</p>
+                <p className="text-white text-base w-1/5 ">POSITION</p>
               </div>
-            ))}
-          </>
+              {data.map.players.map((jugador) => (
+                <div className="w-full flex bg-gray-900 py-2 px-3">
+                  <p className="text-white text-base w-1/5 ">{jugador.id}</p>
+                  <p className="text-white text-base w-1/5 ">{jugador.level}</p>
+                  <p className="text-white text-base w-1/5 ">{jugador.EC}</p>
+                  <p className="text-white text-base w-1/5 ">{jugador.EF}</p>
+                  <p className="text-white text-base w-1/5 ">
+                    [{jugador.position.x}, {jugador.position.y}]
+                  </p>
+                </div>
+              ))}
+            </>
+          ) : (
+            <p className="text-xl font-semibold text-neutral-100 text-center mt-10">No hay jugadores conectados</p>
+          )
+        ) : (
+          <p className="text-xl font-semibold text-neutral-100 text-center mt-10">Partida no empezada o servidor desconectado</p>
         )}
       </div>
       <div className="p-12 w-full h-screen">
         <p className="text-2xl font-semibold text-neutral-100 text-center">MAPA AGAINST ALL</p>
-        {!isLoading && !error && data.map.map && (
+        {!isLoading && !error && data.map.map ? (
           <>
             <div className="w-2/3 grid grid-cols-2 mx-auto mt-10">
               <p className="text-white text-lg w-full text-center">
@@ -122,6 +128,8 @@ const HomePage = () => {
               </p>
             </div>
           </>
+        ) : (
+          <p className="text-3xl font-semibold text-neutral-100 text-center mt-10">Partida no empezada o servidor desconectado</p>
         )}
       </div>
     </div>
