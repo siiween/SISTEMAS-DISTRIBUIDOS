@@ -7,7 +7,7 @@ const port = args[0] ? parseInt(args[0], 10) : 3000;
 const maxPlayers = args[1] ? parseInt(args[1], 10) : 4;
 const db = require("../database/db");
 const util = require("./util");
-
+let idPartida = null;
 app.use(express.json());
 const server = http.createServer(app);
 const io = socketIO(server);
@@ -18,7 +18,33 @@ io.on("connection", (socket) => {
   console.log("Nuevo cliente conectado");
   socket.on("disconnect", () => {
     if (JugadorAlias) {
-      console.log(`Cliente desconectado: ${JugadorAlias}`);
+      console.log(`Jugador desconectado: ${JugadorAlias}`);
+      // eliminar al jugador del mapa
+      // recuperar el mapa de la base de datos
+      if (idPartida) {
+        util
+          .getMapaFromDatabase(idPartida)
+          .then((mapaJSON) => {
+            // nos guardamos los datos del jugador actuales
+            let jugador = null;
+            mapaJSON.players.forEach((player) => {
+              if (player.id === JugadorAlias) {
+                jugador = player;
+              }
+            });
+
+            let mapaActualizado = util.eliminarDelMapa(mapaJSON, jugador);
+            // guardamos el mapa en la base de datos
+            db.run("UPDATE Mapa SET Mapa = ? WHERE ID = ?", [JSON.stringify(mapaActualizado), idPartida], function (err) {
+              if (err) {
+                console.error("Error al guardar el nuevo mapa:", err.message);
+              }
+            });
+          })
+          .catch((error) => {
+            console.error("Error al recuperar el mapa:", error);
+          });
+      }
     } else {
       console.log("Cliente desconectado sin autenticar");
     }
@@ -35,7 +61,7 @@ io.on("connection", (socket) => {
     }
 
     // Verificar si el alias y password coinciden en la base de datos
-    db.get("SELECT id FROM jugadores WHERE alias = ? AND password = ?", [alias, password], (err, row) => {
+    db.get("SELECT * FROM jugadores WHERE alias = ? AND password = ?", [alias, password], (err, row) => {
       if (err) {
         console.error(err.message);
         return socket.emit("registrationError", {
@@ -53,11 +79,22 @@ io.on("connection", (socket) => {
       // El alias y password coinciden, realizar acciones adicionales si es necesario
       console.log("Jugador autenticado correctamente");
       JugadorAlias = alias;
-
       util
         .getMapaFromDatabase(idPartida)
         .then((mapaJSON) => {
-          if (maxPlayers === mapaJSON.players.length) {
+          // si el jugador ya existe en la partida no se le deja entrar
+          let jugadorExiste = false;
+          mapaJSON.players.forEach((player) => {
+            if (player.id === alias) {
+              jugadorExiste = true;
+            }
+          });
+
+          if (jugadorExiste) {
+            socket.emit("registrationError", {
+              error: "El jugador ya existe en la partida",
+            });
+          } else if (maxPlayers === mapaJSON.players.length) {
             socket.emit("registrationError", {
               error: "Partida llena",
             });
@@ -68,11 +105,9 @@ io.on("connection", (socket) => {
               x = Math.floor(Math.random() * 20);
               y = Math.floor(Math.random() * 20);
             }
-
-            const user = { id: alias, level: 1, position: { x: x, y: y }, EF: 1, EC: 0 };
+            const user = { id: alias, level: 1, position: { x: x, y: y }, EF: row.EF, EC: row.EC };
             mapaJSON.players.push(user);
             mapaJSON.map[y][x].content = { type: "Jugador", id: alias, level: 1 };
-
             // Guardar el nuevo mapa en la base de datos
             db.run("UPDATE Mapa SET Mapa = ? WHERE ID = ?", [JSON.stringify(mapaJSON), idPartida], function (err) {
               if (err) {
@@ -98,6 +133,46 @@ io.on("connection", (socket) => {
     });
   });
 
+  socket.on("leavePlayer", () => {
+    if (JugadorAlias) {
+      // eliminar al jugador del mapa
+      if (idPartida) {
+        util
+          .getMapaFromDatabase(idPartida)
+          .then((mapaJSON) => {
+            // nos guardamos los datos del jugador actuales
+            let jugador = null;
+            mapaJSON.players.forEach((player) => {
+              if (player.id === JugadorAlias) {
+                jugador = player;
+              }
+            });
+            let mapaActualizado = util.eliminarDelMapa(mapaJSON, jugador);
+            // guardamos el mapa en la base de datos
+            db.run("UPDATE Mapa SET Mapa = ? WHERE ID = ?", [JSON.stringify(mapaActualizado), idPartida], function (err) {
+              if (err) {
+                console.error("Error al guardar el nuevo mapa:", err.message);
+                socket.emit("leavePlayerResponse", {
+                  success: false,
+                });
+              } else {
+                console.log(`Jugador desconectado: ${JugadorAlias}`);
+                JugadorAlias = null;
+                socket.emit("leavePlayerResponse", {
+                  success: true,
+                });
+              }
+            });
+          })
+          .catch((error) => {
+            console.error("Error al recuperar el mapa:", error);
+          });
+      }
+    } else {
+      console.log("Cliente desconectado sin autenticar");
+    }
+  });
+
   socket.on("movePlayer", (e) => {
     util
       .getMapaFromDatabase(idPartida)
@@ -111,126 +186,47 @@ io.on("connection", (socket) => {
         });
         // poner a null al jugador en la posicion anterior
         if (jugador) {
-          // poner al jugador en la nueva posicion
           switch (e.opcion) {
-            // abajo
-            case "x":
-              if (jugador.position.y + 1 < 20) {
-                mapaJSON.map[jugador.position.y + 1][jugador.position.x].content = { type: "Jugador", id: jugador.id, level: jugador.level };
-                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
-              }
+            case "x": // abajo
+              mapaActualizado = util.moverJugador(mapaJSON, jugador, { x: jugador.position.x, y: jugador.position.y + 1 }, idPartida);
               break;
-            // arriba
-            case "w":
-              if (jugador.position.y - 1 >= 0) {
-                mapaJSON.map[jugador.position.y - 1][jugador.position.x].content = { type: "Jugador", id: jugador.id, level: jugador.level };
-                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
-              }
+            case "w": // arriba
+              mapaActualizado = util.moverJugador(mapaJSON, jugador, { x: jugador.position.x, y: jugador.position.y - 1 }, idPartida);
               break;
-            // derecha
-            case "d":
-              if (jugador.position.x + 1 < 20) {
-                mapaJSON.map[jugador.position.y][jugador.position.x + 1].content = { type: "Jugador", id: jugador.id, level: jugador.level };
-                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
-              }
+            case "d": // derecha
+              mapaActualizado = util.moverJugador(mapaJSON, jugador, { x: jugador.position.x + 1, y: jugador.position.y }, idPartida);
               break;
-            // izquierda
-            case "a":
-              if (jugador.position.x - 1 >= 0) {
-                mapaJSON.map[jugador.position.y][jugador.position.x - 1].content = { type: "Jugador", id: jugador.id, level: jugador.level };
-                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
-              }
-
-            case "q":
-              if (jugador.position.x - 1 >= 0 && jugador.position.y - 1 >= 0) {
-                mapaJSON.map[jugador.position.y - 1][jugador.position.x - 1].content = { type: "Jugador", id: jugador.id, level: jugador.level };
-                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
-              }
+            case "a": // izquierda
+              mapaActualizado = util.moverJugador(mapaJSON, jugador, { x: jugador.position.x - 1, y: jugador.position.y }, idPartida);
               break;
-            case "e":
-              if (jugador.position.x + 1 < 20 && jugador.position.y - 1 >= 0) {
-                mapaJSON.map[jugador.position.y - 1][jugador.position.x + 1].content = { type: "Jugador", id: jugador.id, level: jugador.level };
-                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
-              }
+            case "q": // arriba izquierda
+              mapaActualizado = util.moverJugador(mapaJSON, jugador, { x: jugador.position.x - 1, y: jugador.position.y - 1 }, idPartida);
               break;
-            case "z":
-              if (jugador.position.x - 1 >= 0 && jugador.position.y + 1 < 20) {
-                mapaJSON.map[jugador.position.y + 1][jugador.position.x - 1].content = { type: "Jugador", id: jugador.id, level: jugador.level };
-                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
-              }
+            case "e": // arriba derecha
+              mapaActualizado = util.moverJugador(mapaJSON, jugador, { x: jugador.position.x + 1, y: jugador.position.y - 1 }, idPartida);
               break;
-            case "c":
-              if (jugador.position.x + 1 < 20 && jugador.position.y + 1 < 20) {
-                mapaJSON.map[jugador.position.y + 1][jugador.position.x + 1].content = { type: "Jugador", id: jugador.id, level: jugador.level };
-                mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
-              }
+            case "z": // abajo izquierda
+              mapaActualizado = util.moverJugador(mapaJSON, jugador, { x: jugador.position.x - 1, y: jugador.position.y + 1 }, idPartida);
               break;
-
+            case "c": // abajo derecha
+              mapaActualizado = util.moverJugador(mapaJSON, jugador, { x: jugador.position.x + 1, y: jugador.position.y + 1 }, idPartida);
+              break;
             default:
               break;
           }
-          // actualizar la posicion del jugador
-          mapaJSON.players.forEach((player) => {
-            if (player.id === e.userName) {
-              switch (e.opcion) {
-                // arriba
-                case "w":
-                  if (player.position.y + 1 < 20) player.position.y += 1;
-                  break;
-                // abajo
-                case "x":
-                  if (player.position.y - 1 >= 0) player.position.y -= 1;
-                  break;
-                // derecha
-                case "d":
-                  if (player.position.x + 1 < 20) player.position.x += 1;
-                  break;
-                // izquierda
-                case "a":
-                  if (player.position.x - 1 >= 0) player.position.x -= 1;
-                  break;
-                case "q":
-                  if (player.position.x - 1 >= 0 && player.position.y - 1 >= 0) {
-                    player.position.x -= 1;
-                    player.position.y -= 1;
-                  }
-                  break;
-                case "e":
-                  if (player.position.x + 1 < 20 && player.position.y - 1 >= 0) {
-                    player.position.x += 1;
-                    player.position.y -= 1;
-                  }
-                  break;
-                case "z":
-                  if (player.position.x - 1 >= 0 && player.position.y + 1 < 20) {
-                    player.position.x -= 1;
-                    player.position.y += 1;
-                  }
-                  break;
-                case "c":
-                  if (player.position.x + 1 < 20 && player.position.y + 1 < 20) {
-                    player.position.x += 1;
-                    player.position.y += 1;
-                  }
-                  break;
-                default:
-                  break;
-              }
-            }
-          });
         }
 
-        // guardamos el mapa en la base de datos
-        db.run("UPDATE Mapa SET Mapa = ? WHERE ID = ?", [JSON.stringify(mapaJSON), idPartida], function (err) {
-          if (err) {
-            console.error("Error al guardar el nuevo mapa:", err.message);
-          } else {
-            console.log("Mapa actualizado ID:", idPartida);
+        // comprobar si el jugador ha muerto en el mapa actualizado
+        let jugadorMuerto = true;
+        mapaActualizado.players.forEach((player) => {
+          if (player.id === e.userName) {
+            jugadorMuerto = false;
           }
         });
+
         socket.emit("movePlayerResponse", {
-          dead: false,
-          map: mapaJSON,
+          dead: jugadorMuerto,
+          map: mapaActualizado,
         });
       })
       .catch((error) => {
@@ -242,8 +238,55 @@ io.on("connection", (socket) => {
   });
 });
 
+// nos guardamos los datos del jugador actuales
 server.listen(port, () => {
   console.log(`Servidor principal escuchando en el puerto ${port}`);
 });
 
-util.crearNuevoMapa();
+const crearNuevoMapa = async () => {
+  try {
+    const regions = await util.obtenerDatosTiempoAleatorio();
+
+    const map = [];
+    for (let i = 0; i < 20; i++) {
+      const row = [];
+      for (let j = 0; j < 20; j++) {
+        let region = 3;
+        if (i < 10 && j < 10) region = 0;
+        else if (i < 10 && j >= 10) region = 1;
+        else if (i >= 10 && j < 10) region = 2;
+        const tipo = Math.floor(Math.random() * 10);
+        if (tipo === 0) row.push({ region: region, content: { type: "Mina" } });
+        else if (tipo === 1) row.push({ region: region, content: { type: "Alimento" } });
+        else row.push({ region: region, content: { type: null } });
+      }
+      map.push(row);
+    }
+
+    // Guardar el nuevo mapa en la base de datos
+    db.run(
+      "INSERT INTO Mapa (Mapa) VALUES (?)",
+      [
+        JSON.stringify({
+          regions: regions,
+          map: map,
+          players: [],
+          NPCs: [],
+        }),
+      ],
+      function (err) {
+        if (err) {
+          console.error("Error al guardar el nuevo mapa:", err.message);
+        } else {
+          idPartida = this.lastID; // Guardar el ID de la partida creada
+          console.log("Nuevo mapa creado con ID:", idPartida);
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error al crear el mapa:", error.message);
+  }
+};
+
+// creamos un nuevo mapa
+crearNuevoMapa();

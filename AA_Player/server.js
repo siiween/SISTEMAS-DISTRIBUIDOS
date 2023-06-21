@@ -4,7 +4,7 @@ const io = require("socket.io-client");
 // Lectura del terminal, parametros
 const args = process.argv.slice(2);
 const enginePort = args[0] ? parseInt(args[0], 10) : "http://localhost:3000";
-const kafkaPort = args[1] ? parseInt(args[1], 10) : "http://localhost:6000";
+const kafkaPort = args[1] ? parseInt(args[1], 10) : "http://localhost:9092";
 const registryPort = args[2] ? parseInt(args[2], 10) : "http://localhost:7000";
 // estado de la partida
 let mapaActual = null;
@@ -51,6 +51,10 @@ const manejarEntradaPartida = (opcion) => {
     case "c":
       movimiento(opcion);
       return;
+    case "0":
+    case 0:
+      salirPartida();
+      break;
     default:
       console.log("Movimiento inválido");
       partidaIniciada();
@@ -60,7 +64,49 @@ const manejarEntradaPartida = (opcion) => {
 
 const partidaIniciada = () => {
   util.drawMap(mapaActual);
-  console.log("Mueve al jugador a una dirección: ");
+  console.log("Mueve al jugador a una dirección (pulse 0 para salir de la partida): ");
+};
+
+const salirPartida = () => {
+  if (userName) {
+    // Bandera para controlar si se ha recibido una respuesta del servidor de registro
+    let respuestaRecibida = false;
+    try {
+      socket.emit("leavePlayer");
+      // Escuchar eventos de respuesta del servidor de registro
+      socket.on("leavePlayerResponse", (response) => {
+        // Se ha recibido una respuesta, se cancela el temporizador
+        clearTimeout(timeout);
+        if (!respuestaRecibida) {
+          respuestaRecibida = true;
+          if (response.success) {
+            console.log("Ha salido de la partida");
+          } else {
+            console.log("No ha podido salir de la partida");
+          }
+          mapaActual = null;
+          UsuarioLogeado = false;
+          rl.question("Presione enter para continuar...", () => {
+            console.clear();
+            util.mostrarMenu();
+          });
+        }
+      });
+      const timeout = setTimeout(() => {
+        if (!respuestaRecibida) {
+          console.log("El servidor de Juego no está disponible en este momento");
+          mapaActual = null;
+          UsuarioLogeado = false;
+          rl.question("Presione enter para continuar...", () => {
+            util.mostrarMenu();
+          });
+        }
+      }, 5000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
+    } catch (error) {
+      console.log(error);
+      console.log("Error al enviar lel movimiento del jugador");
+    }
+  }
 };
 
 const movimiento = (opcion) => {
@@ -75,15 +121,25 @@ const movimiento = (opcion) => {
         clearTimeout(timeout);
         if (!respuestaRecibida) {
           respuestaRecibida = true;
-          mapaActual = response.map;
+          if (response.dead === false) {
+            mapaActual = response.map;
+            partidaIniciada();
+          } else {
+            console.log("Ha sido eliminado de la partida");
+            mapaActual = null;
+            UsuarioLogeado = false;
+            rl.question("Presione enter para continuar...", () => {
+              console.clear();
+              util.mostrarMenu();
+            });
+          }
         }
-
-        partidaIniciada();
-        console.log("ultimo movimiento: " + opcion);
       });
       const timeout = setTimeout(() => {
         if (!respuestaRecibida) {
           console.log("El servidor de Juego no está disponible en este momento");
+          mapaActual = null;
+          UsuarioLogeado = false;
           rl.question("Presione enter para continuar...", () => {
             util.mostrarMenu();
           });

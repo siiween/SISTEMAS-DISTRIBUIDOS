@@ -1,53 +1,7 @@
 const db = require("../database/db");
 const axios = require("axios");
 
-const ciudades = ["Tokio", "Roma", "Madrid", "Pekin", "Barcelona", "Murcia", "Burgos", "New York", "Londres"];
-
-const crearNuevoMapa = async () => {
-  try {
-    const regions = await obtenerDatosTiempoAleatorio();
-
-    const map = [];
-    for (let i = 0; i < 20; i++) {
-      const row = [];
-      for (let j = 0; j < 20; j++) {
-        let region = 3;
-        if (i < 10 && j < 10) region = 0;
-        else if (i < 10 && j >= 10) region = 1;
-        else if (i >= 10 && j < 10) region = 2;
-        const tipo = Math.floor(Math.random() * 10);
-        if (tipo === 0) row.push({ region: region, content: { type: "Mina" } });
-        else if (tipo === 1) row.push({ region: region, content: { type: "Alimento" } });
-        else row.push({ region: region, content: { type: null } });
-      }
-      map.push(row);
-    }
-
-    // Guardar el nuevo mapa en la base de datos
-    db.run(
-      "INSERT INTO Mapa (Mapa) VALUES (?)",
-      [
-        JSON.stringify({
-          regions: regions,
-          map: map,
-          players: [],
-          NPCs: [],
-        }),
-      ],
-      function (err) {
-        if (err) {
-          console.error("Error al guardar el nuevo mapa:", err.message);
-        } else {
-          idPartida = this.lastID; // Guardar el ID de la partida creada
-          console.log("Nuevo mapa creado con ID:", idPartida);
-          console.log("Partida no iniciada, por favor, pulsa s para iniciar la partida:");
-        }
-      }
-    );
-  } catch (error) {
-    console.error("Error al crear el mapa:", error.message);
-  }
-};
+const ciudades = ["Tokio", "Roma", "Madrid", "Pekin", "Barcelona", "Murcia", "Burgos", "New York", "Londres", "Copenhague"];
 
 const getMapaFromDatabase = async (id) => {
   return new Promise((resolve, reject) => {
@@ -106,10 +60,143 @@ const obtenerDatosTiempoCiudadesAleatorias = async (apiKey) => {
   return datosTiempo;
 };
 
+// funcion que reciba mapa, jugador y movimiento y devuelva el mapa actualizado
+const moverJugador = (mapaJSON, jugador, posicionNueva, idPartida) => {
+  if (posicionNueva.x < 0 || posicionNueva.x > 19 || posicionNueva.y < 0 || posicionNueva.y > 19 || jugador.level === -1) {
+    return mapaJSON;
+  } else {
+    /*
+      MINA
+    */
+    if (mapaJSON.map[posicionNueva.y][posicionNueva.x].content.type === "Mina") {
+      mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
+      let jugadorMuerto = null;
+      mapaJSON.players.forEach((player) => {
+        if (player.id === jugador.id) {
+          jugadorMuerto = player;
+        }
+      });
+      // actualizamos el mapa
+      console.log(jugadorMuerto.id, "ha muerto");
+      mapaJSON = eliminarDelMapa(mapaJSON, jugadorMuerto);
+    } else {
+      /*
+        CAMBIO DE REGION
+      */
+      if (mapaJSON.map[posicionNueva.y][posicionNueva.x].region !== mapaJSON.map[jugador.position.y][jugador.position.x].region) {
+        console.log("El jugador ha cambiado de region", jugador.id);
+        // si la temperatura es mas mayor o igual de 25 grados sumamos 1 a la EC al nivel del jugador
+        const temperaturaNueva = mapaJSON.regions[mapaJSON.map[posicionNueva.y][posicionNueva.x].region].temperature;
+        if (temperaturaNueva >= 25) {
+          console.log(jugador.id, "Ha cambiado de region y ha sumado a su nivel", jugador.EC);
+          mapaJSON.players.forEach((player) => {
+            if (player.id === jugador.id) {
+              player.level = player.level + player.EC >= 0 ? player.level + player.EC : 0;
+            }
+          });
+          mapaJSON.map[jugador.position.y][jugador.position.x].content.level =
+            mapaJSON.map[jugador.position.y][jugador.position.x].content.level + jugador.EC >= 0 ?? 0;
+        } else if (temperaturaNueva <= 10) {
+          console.log(jugador.id, "Ha cambiado de region y ha sumado su nivel");
+          mapaJSON.players.forEach((player) => {
+            if (player.id === jugador.id) {
+              player.level = player.level + player.EF >= 0 ? player.level + player.EF : 0;
+            }
+          });
+          mapaJSON.map[jugador.position.y][jugador.position.x].content.level =
+            mapaJSON.map[jugador.position.y][jugador.position.x].content.level + jugador.EF >= 0 ?? 0;
+        }
+      }
+      /*
+       ALIMENTO
+      */
+      if (mapaJSON.map[posicionNueva.y][posicionNueva.x].content.type === "Alimento") {
+        mapaJSON.map[posicionNueva.y][posicionNueva.x].content = { type: "Jugador", id: jugador.id, level: jugador.level + 1 };
+        mapaJSON.players.forEach((player) => {
+          if (player.id === jugador.id) {
+            player.level = jugador.level + 1;
+          }
+        });
+        console.log(jugador.id, "ha comido");
+      }
+      // JUGADOR
+      else if (mapaJSON.map[posicionNueva.y][posicionNueva.x].content.type === "Jugador") {
+        console.log(jugador.id, "ha atacado a un jugador");
+        // si el jugador actual tiene mas nivel que el otro jugador muere el que tenga menos nivel
+        if (jugador.level > mapaJSON.map[posicionNueva.y][posicionNueva.x].content.level) {
+          // ponemos el nivel del jugador que ha muerto
+          let jugadorMuerto = null;
+          mapaJSON.players.forEach((player) => {
+            if (player.id === mapaJSON.map[posicionNueva.y][posicionNueva.x].content.id) {
+              jugadorMuerto = player;
+            }
+          });
+          console.log(jugadorMuerto.id, "ha muerto");
+          mapaJSON = eliminarDelMapa(mapaJSON, jugadorMuerto);
+
+          // se queda la casilla el que mas nivel tiene
+          mapaJSON.map[posicionNueva.y][posicionNueva.x].content = { type: "Jugador", id: jugador.id, level: jugador.level };
+        } else if (jugador.level < mapaJSON.map[posicionNueva.y][posicionNueva.x].content.level) {
+          // ponemos el nivel del jugador que ha muerto
+          let jugadorMuerto = null;
+          mapaJSON.players.forEach((player) => {
+            if (player.id === jugador.id) {
+              jugadorMuerto = player;
+            }
+          });
+          console.log(jugadorMuerto.id, "ha muerto");
+          mapaJSON = eliminarDelMapa(mapaJSON, jugadorMuerto);
+        } else {
+          console.log("Los dos tienen el mismo nivel, no se muere nadie");
+          mapaJSON.map[posicionNueva.y][posicionNueva.x].content = { type: "Jugador", id: jugador.id, level: jugador.level };
+        }
+      }
+      // NPC
+      else if (mapaJSON.map[posicionNueva.y][posicionNueva.x].content.type === "NPC") {
+        console.log(jugador.id, "Ha atacado a un NPC");
+      }
+      //  MOVIMIENTO NORMAL
+      else {
+        mapaJSON.map[posicionNueva.y][posicionNueva.x].content = { type: "Jugador", id: jugador.id, level: jugador.level };
+        console.log(jugador.id, "El jugador se ha movido");
+      }
+
+      // actualizamos el mapa
+      mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
+      // actualizamos la posicion del jugador
+      mapaJSON.players.forEach((player) => {
+        if (player.id === jugador.id) {
+          player.position = posicionNueva;
+        }
+      });
+    }
+
+    // guardamos el mapa en la base de datos
+    db.run("UPDATE Mapa SET Mapa = ? WHERE ID = ?", [JSON.stringify(mapaJSON), idPartida], function (err) {
+      if (err) {
+        console.error("Error al guardar el nuevo mapa:", err.message);
+      } else {
+        console.log("Mapa actualizado ID:", idPartida);
+      }
+    });
+
+    return mapaJSON;
+  }
+};
+
+// FUNCION QUE elimina A UN JUGADOR del mapa
+const eliminarDelMapa = (mapaJSON, jugador) => {
+  mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
+  // quitar jugador del array de jugadores y dejar el array de jugadores solo con los jugadores vivos
+  mapaJSON.players = mapaJSON.players.filter((player) => player.id !== jugador.id);
+  return mapaJSON;
+};
+
 module.exports = {
   obtenerDatosTiempo,
   obtenerDatosTiempoAleatorio,
   obtenerDatosTiempoCiudadesAleatorias,
   getMapaFromDatabase,
-  crearNuevoMapa,
+  moverJugador,
+  eliminarDelMapa,
 };

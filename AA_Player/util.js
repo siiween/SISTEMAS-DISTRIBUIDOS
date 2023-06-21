@@ -8,9 +8,13 @@ const mostrarMenu = () => {
 };
 
 const padString = (value, width) => {
-  const stringValue = String(value);
-  const padding = " ".repeat(width - stringValue.length);
-  return stringValue + padding;
+  try {
+    const stringValue = String(value);
+    const padding = " ".repeat(width - stringValue.length);
+    return stringValue + padding;
+  } catch (error) {
+    console.error(value);
+  }
 };
 
 const drawMap = (mapa) => {
@@ -137,6 +141,17 @@ const drawMap = (mapa) => {
         padString("", 4) +
         padString(`${mapa.regions[3].name} ${mapa.regions[3].temperature}Cº`, 30)
     );
+
+    // mostaramos los jugadores
+    console.log("");
+    console.log("Jugadores:");
+    mapa.players.forEach((jugador) => {
+      if (jugador.level === -1) {
+        console.log(`\t Alias: ${jugador.id}  MUERTO`);
+      } else {
+        console.log(`\t Alias: ${jugador.id}  level: ${jugador.level}  EF: ${jugador.EF} EC: ${jugador.EC}`);
+      }
+    });
   } else {
     console.log("Lo siento no hay mapa disponible");
   }
