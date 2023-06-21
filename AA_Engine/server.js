@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const socketIO = require("socket.io");
 const app = express();
+const bcrypt = require("bcrypt");
 const args = process.argv.slice(2);
 const port = args[0] ? parseInt(args[0], 10) : 3000;
 const maxPlayers = args[1] ? parseInt(args[1], 10) : 4;
@@ -11,6 +12,21 @@ let idPartida = null;
 app.use(express.json());
 const server = http.createServer(app);
 const io = socketIO(server);
+
+app.get("/api/mapa", (req, res) => {
+  // obtener mapa de la base de datos
+  util
+    .getMapaFromDatabase(idPartida)
+    .then((mapaJSON) => {
+      const response = {
+        map: mapaJSON,
+      };
+      return res.json(response);
+    })
+    .catch((error) => {
+      console.error("Error al recuperar el mapa:", error);
+    });
+});
 
 io.on("connection", (socket) => {
   let JugadorAlias = null;
@@ -61,7 +77,7 @@ io.on("connection", (socket) => {
     }
 
     // Verificar si el alias y password coinciden en la base de datos
-    db.get("SELECT * FROM jugadores WHERE alias = ? AND password = ?", [alias, password], (err, row) => {
+    db.get("SELECT * FROM jugadores WHERE alias = ?", [alias], (err, row) => {
       if (err) {
         console.error(err.message);
         return socket.emit("registrationError", {
@@ -70,66 +86,75 @@ io.on("connection", (socket) => {
       }
 
       if (!row) {
-        console.log("Alias o contraseña incorrectos");
+        console.log("Alias incorrecto");
         return socket.emit("registrationError", {
-          error: "Alias o contraseña incorrectos",
+          error: "Alias incorrecto",
         });
       }
 
-      // El alias y password coinciden, realizar acciones adicionales si es necesario
-      console.log("Jugador autenticado correctamente");
-      JugadorAlias = alias;
-      util
-        .getMapaFromDatabase(idPartida)
-        .then((mapaJSON) => {
-          // si el jugador ya existe en la partida no se le deja entrar
-          let jugadorExiste = false;
-          mapaJSON.players.forEach((player) => {
-            if (player.id === alias) {
-              jugadorExiste = true;
-            }
-          });
-
-          if (jugadorExiste) {
-            socket.emit("registrationError", {
-              error: "El jugador ya existe en la partida",
-            });
-          } else if (maxPlayers === mapaJSON.players.length) {
-            socket.emit("registrationError", {
-              error: "Partida llena",
-            });
-          } else {
-            let x = Math.floor(Math.random() * 20);
-            let y = Math.floor(Math.random() * 20);
-            while (mapaJSON.map[y][x].content.type !== null) {
-              x = Math.floor(Math.random() * 20);
-              y = Math.floor(Math.random() * 20);
-            }
-            const user = { id: alias, level: 1, position: { x: x, y: y }, EF: row.EF, EC: row.EC };
-            mapaJSON.players.push(user);
-            mapaJSON.map[y][x].content = { type: "Jugador", id: alias, level: 1 };
-            // Guardar el nuevo mapa en la base de datos
-            db.run("UPDATE Mapa SET Mapa = ? WHERE ID = ?", [JSON.stringify(mapaJSON), idPartida], function (err) {
-              if (err) {
-                console.error("Error al guardar el nuevo mapa:", err.message);
-              } else {
-                console.log("Mapa actualizado ID:", idPartida);
+      // Verificar la contraseña actual con el hash almacenado
+      const contrasenaCoincide = bcrypt.compareSync(password, row.Password);
+      if (!contrasenaCoincide) {
+        console.log("Contraseña incorrecta");
+        return socket.emit("registrationError", {
+          error: "Contraseña incorrecta",
+        });
+      } else {
+        // El alias y password coinciden, realizar acciones adicionales si es necesario
+        console.log("Jugador autenticado correctamente");
+        JugadorAlias = alias;
+        util
+          .getMapaFromDatabase(idPartida)
+          .then((mapaJSON) => {
+            // si el jugador ya existe en la partida no se le deja entrar
+            let jugadorExiste = false;
+            mapaJSON.players.forEach((player) => {
+              if (player.id === alias) {
+                jugadorExiste = true;
               }
             });
 
-            socket.emit("registrationSuccess", {
-              status: true,
-              message: "Partida iniciada",
-              map: mapaJSON,
+            if (jugadorExiste) {
+              socket.emit("registrationError", {
+                error: "El jugador ya existe en la partida",
+              });
+            } else if (maxPlayers === mapaJSON.players.length) {
+              socket.emit("registrationError", {
+                error: "Partida llena",
+              });
+            } else {
+              let x = Math.floor(Math.random() * 20);
+              let y = Math.floor(Math.random() * 20);
+              while (mapaJSON.map[y][x].content.type !== null) {
+                x = Math.floor(Math.random() * 20);
+                y = Math.floor(Math.random() * 20);
+              }
+              const user = { id: alias, level: 1, position: { x: x, y: y }, EF: row.EF, EC: row.EC };
+              mapaJSON.players.push(user);
+              mapaJSON.map[y][x].content = { type: "Jugador", id: alias, level: 1 };
+              // Guardar el nuevo mapa en la base de datos
+              db.run("UPDATE Mapa SET Mapa = ? WHERE ID = ?", [JSON.stringify(mapaJSON), idPartida], function (err) {
+                if (err) {
+                  console.error("Error al guardar el nuevo mapa:", err.message);
+                } else {
+                  console.log("Mapa actualizado ID:", idPartida);
+                }
+              });
+
+              socket.emit("registrationSuccess", {
+                status: true,
+                message: "Partida iniciada",
+                map: mapaJSON,
+              });
+            }
+          })
+          .catch((error) => {
+            console.error("Error al recuperar el mapa:", error);
+            socket.emit("registrationError", {
+              error: "Error al recuperar el mapa",
             });
-          }
-        })
-        .catch((error) => {
-          console.error("Error al recuperar el mapa:", error);
-          socket.emit("registrationError", {
-            error: "Error al recuperar el mapa",
           });
-        });
+      }
     });
   });
 

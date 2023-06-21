@@ -1,0 +1,3 @@
+{"level":"info","message":"Servidor de Registro escuchando en el puerto 7000","timestamp":"2023-06-21T17:24:14.150Z"}
+{"level":"info","message":"Nuevo cliente conectado","timestamp":"2023-06-21T17:24:49.578Z"}
+{"EC":"1","EF":"1","alias":"rauñ","level":"info","message":"Jugador registrado correctamente","nivel":1,"timestamp":"2023-06-21T17:24:49.637Z"}
