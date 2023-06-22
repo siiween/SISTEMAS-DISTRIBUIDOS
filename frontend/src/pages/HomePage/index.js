@@ -75,7 +75,7 @@ const HomePage = () => {
       <div className="w-1/3 h-screen bg-gray-800 py-12 px-5">
         <p className="text-2xl font-semibold text-neutral-100 text-center mb-10">JUGADORES AGAINST ALL</p>
 
-        {!isLoading && !error && data.map.players ? (
+        {!isLoading && !error && data.map && data.map.players ? (
           data.map.players.length > 0 ? (
             <>
               <div className="w-full flex bg-gray-950 rounded-t py-2 px-3">
@@ -106,7 +106,7 @@ const HomePage = () => {
       </div>
       <div className="p-12 w-full h-screen">
         <p className="text-2xl font-semibold text-neutral-100 text-center">MAPA AGAINST ALL</p>
-        {!isLoading && !error && data.map.map ? (
+        {!isLoading && !error && data.map && data.map.map ? (
           <>
             <div className="w-2/3 grid grid-cols-2 mx-auto mt-10">
               <p className="text-white text-lg w-full text-center">

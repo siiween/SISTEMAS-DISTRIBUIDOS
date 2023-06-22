@@ -28,6 +28,47 @@ app.get("/api/mapa", (req, res) => {
     });
 });
 
+// devuelve un array con todos los jugadores
+app.get("/api/jugadores", (req, res) => {
+  db.all("SELECT * FROM jugadores", [], (err, rows) => {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).json({ error: "Error en la consulta a la base de datos" });
+    }
+    const response = rows.map((row) => {
+      return {
+        id: row.Alias,
+        level: row.Level,
+        EC: row.EC,
+        EF: row.EF,
+      };
+    });
+    return res.json(response);
+  });
+});
+
+// devuleve la informacion de un jugador en concreto
+app.get("/api/jugador/:id", (req, res) => {
+  const id = req.params.id;
+  db.get("SELECT * FROM jugadores WHERE alias = ?", [id], (err, row) => {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).json({ error: "Error en la consulta a la base de datos" });
+    }
+    if (!row) {
+      console.log("Alias incorrecto");
+      return res.status(404).json({ error: "Alias incorrecto" });
+    }
+    const response = {
+      id: row.Alias,
+      level: row.Level,
+      EC: row.EC,
+      EF: row.EF,
+    };
+    return res.json(response);
+  });
+});
+
 io.on("connection", (socket) => {
   let JugadorAlias = null;
 
