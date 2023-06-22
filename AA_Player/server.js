@@ -101,7 +101,7 @@ const salirPartida = () => {
             util.mostrarMenu();
           });
         }
-      }, 5000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
+      }, 3000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
     } catch (error) {
       console.log(error);
       console.log("Error al enviar lel movimiento del jugador");
@@ -144,7 +144,7 @@ const movimiento = (opcion) => {
             util.mostrarMenu();
           });
         }
-      }, 5000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
+      }, 3000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
     } catch (error) {
       console.log(error);
       console.log("Error al enviar lel movimiento del jugador");
@@ -193,7 +193,7 @@ const registrarJugador = () => {
                 util.mostrarMenu();
               });
             }
-          }, 5000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
+          }, 3000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
         });
       });
     });
@@ -243,7 +243,7 @@ const editarJugador = () => {
                   util.mostrarMenu();
                 });
               }
-            }, 5000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
+            }, 3000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
           } catch (error) {
             console.log(error);
             console.log("Error al editar el jugador");
@@ -301,7 +301,7 @@ const unirsePartida = () => {
               util.mostrarMenu();
             });
           }
-        }, 5000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
+        }, 3000); // Tiempo de espera en milisegundos (en este ejemplo, 5 segundos)
       } catch (error) {
         console.log(error);
         console.log("Error al enviar la autenticación del jugador");

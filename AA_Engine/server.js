@@ -71,6 +71,7 @@ app.get("/api/jugador/:id", (req, res) => {
 
 io.on("connection", (socket) => {
   let JugadorAlias = null;
+  let NPCCodigo = null;
 
   console.log("Nuevo cliente conectado");
   socket.on("disconnect", () => {
@@ -102,9 +103,140 @@ io.on("connection", (socket) => {
             console.error("Error al recuperar el mapa:", error);
           });
       }
+    } else if (NPCCodigo) {
+      console.log(`NPC desconectado: ${NPCCodigo}`);
+      // eliminar NPC del mapa
+      // recuperar el mapa de la base de datos
+      if (idPartida) {
+        // recuperar el mapa de la base de datos
+        util
+          .getMapaFromDatabase(idPartida)
+          .then((mapaJSON) => {
+            // nos guardamos los datos del jugador actuales
+            let NPC = null;
+            mapaJSON.NPCs.forEach((npc) => {
+              if (npc.id === NPCCodigo) {
+                NPC = npc;
+              }
+            });
+            // ELIMINAMOS EL NPC DEL MAPA
+            mapaJSON.map[NPC.position.y][NPC.position.x].content = { type: null };
+            mapaJSON.NPCs = mapaJSON.NPCs.filter((npc) => npc.id !== NPCCodigo);
+            // guardamos el mapa en la base de datos
+            db.run("UPDATE Mapa SET Mapa = ? WHERE ID = ?", [JSON.stringify(mapaJSON), idPartida], function (err) {
+              if (err) {
+                console.error("Error al guardar el nuevo mapa:", err.message);
+              }
+            });
+          })
+          .catch((error) => {
+            console.error("Error al recuperar el mapa:", error);
+          });
+      }
     } else {
       console.log("Cliente desconectado sin autenticar");
     }
+  });
+
+  socket.on("connectNpc", (e) => {
+    try {
+      // GENERAL UN CODIGO ALEATORIO PARA EL NPC
+      const codigo = Math.floor(Math.random() * 1000000);
+      // creamos al npc
+      util
+        .getMapaFromDatabase(idPartida)
+        .then((mapaJSON) => {
+          let x = Math.floor(Math.random() * 20);
+          let y = Math.floor(Math.random() * 20);
+          while (mapaJSON.map[y][x].content.type !== null) {
+            x = Math.floor(Math.random() * 20);
+            y = Math.floor(Math.random() * 20);
+          }
+          const npc = { id: codigo, level: Math.floor(Math.random() * 10), position: { x: x, y: y } };
+          mapaJSON.NPCs.push(npc);
+          mapaJSON.map[y][x].content = { type: "NPC", id: codigo, level: npc.level };
+          // Guardar el nuevo mapa en la base de datos
+          db.run("UPDATE Mapa SET Mapa = ? WHERE ID = ?", [JSON.stringify(mapaJSON), idPartida], function (err) {
+            if (err) {
+              console.error("Error al guardar el nuevo mapa:", err.message);
+            } else {
+              console.log("Mapa actualizado ID:", idPartida);
+            }
+          });
+          NPCCodigo = codigo;
+          socket.emit("connectNpcResponse", {
+            success: true,
+            codigo: codigo,
+          });
+        })
+        .catch((error) => {
+          console.error("Error al recuperar el mapa:", error);
+          socket.emit("connectNpcResponse", {
+            error: "Error al recuperar el mapa",
+          });
+        });
+
+      console.log("Codigo de NPC: " + codigo);
+      socket.emit("connectNpcResponse", {
+        success: true,
+        codigo: codigo,
+      });
+    } catch (error) {
+      socket.emit("connectNpcResponse", {
+        error: true,
+      });
+    }
+  });
+
+  socket.on("moveNpc", ({ codigo, movimiento }) => {
+    util.getMapaFromDatabase(idPartida).then((mapaJSON) => {
+      // nos guardamos los datos del jugador actuales
+      let NPC = null;
+      mapaJSON.NPCs.forEach((npc) => {
+        if (npc.id === codigo) {
+          NPC = npc;
+        }
+      });
+
+      if (NPCCodigo && NPC) {
+        switch (movimiento) {
+          case "x": // abajo
+            mapaActualizado = util.moverNPC(mapaJSON, NPC, { x: NPC.position.x, y: NPC.position.y + 1 }, idPartida);
+            break;
+          case "w": // arriba
+            mapaActualizado = util.moverNPC(mapaJSON, NPC, { x: NPC.position.x, y: NPC.position.y - 1 }, idPartida);
+            break;
+          case "d": // derecha
+            mapaActualizado = util.moverNPC(mapaJSON, NPC, { x: NPC.position.x + 1, y: NPC.position.y }, idPartida);
+            break;
+          case "a": // izquierda
+            mapaActualizado = util.moverNPC(mapaJSON, NPC, { x: NPC.position.x - 1, y: NPC.position.y }, idPartida);
+            break;
+          case "q": // arriba izquierda
+            mapaActualizado = util.moverNPC(mapaJSON, NPC, { x: NPC.position.x - 1, y: NPC.position.y - 1 }, idPartida);
+            break;
+          case "e": // arriba derecha
+            mapaActualizado = util.moverNPC(mapaJSON, NPC, { x: NPC.position.x + 1, y: NPC.position.y - 1 }, idPartida);
+            break;
+          case "z": // abajo izquierda
+            mapaActualizado = util.moverNPC(mapaJSON, NPC, { x: NPC.position.x - 1, y: NPC.position.y + 1 }, idPartida);
+            break;
+          case "c": // abajo derecha
+            mapaActualizado = util.moverNPC(mapaJSON, NPC, { x: NPC.position.x + 1, y: NPC.position.y + 1 }, idPartida);
+            break;
+          default:
+            break;
+        }
+        socket.emit("moveNpcResponse", {
+          success: true,
+        });
+      } else {
+        // enviamos al npc que se ha muerto
+        socket.emit("moveNpcResponse", {
+          dead: true,
+        });
+      }
+    });
   });
 
   socket.on("autPlayer", ({ alias, password }) => {

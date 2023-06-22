@@ -154,6 +154,24 @@ const moverJugador = (mapaJSON, jugador, posicionNueva, idPartida) => {
       // NPC
       else if (mapaJSON.map[posicionNueva.y][posicionNueva.x].content.type === "NPC") {
         console.log(jugador.id, "Ha atacado a un NPC");
+        // si el jugador actual tiene mas nivel que el NPC muere el NPC
+        if (jugador.level >= mapaJSON.map[posicionNueva.y][posicionNueva.x].content.level) {
+          // eliminamos al NPC de la lista de NPCs
+          mapaJSON.NPCs = mapaJSON.NPCs.filter((npc) => npc.id !== mapaJSON.map[posicionNueva.y][posicionNueva.x].content.id);
+          console.log("El NPC ", mapaJSON.map[posicionNueva.y][posicionNueva.x].content.id, " ha muerto");
+          // se queda la casilla el que mas nivel tiene
+          mapaJSON.map[posicionNueva.y][posicionNueva.x].content = { type: "Jugador", id: jugador.id, level: jugador.level };
+        } else {
+          // ponemos el nivel del jugador que ha muerto
+          let jugadorMuerto = null;
+          mapaJSON.players.forEach((player) => {
+            if (player.id === jugador.id) {
+              jugadorMuerto = player;
+            }
+          });
+          console.log(jugadorMuerto.id, "ha muerto");
+          mapaJSON = eliminarDelMapa(mapaJSON, jugadorMuerto);
+        }
       }
       //  MOVIMIENTO NORMAL
       else {
@@ -184,6 +202,70 @@ const moverJugador = (mapaJSON, jugador, posicionNueva, idPartida) => {
   }
 };
 
+const moverNPC = (mapaJSON, NPC, posicionNueva, idPartida) => {
+  if (
+    posicionNueva.x < 0 ||
+    posicionNueva.x > 19 ||
+    posicionNueva.y < 0 ||
+    posicionNueva.y > 19 ||
+    (mapaJSON.map[posicionNueva.y][posicionNueva.x].content.type !== "Jugador" &&
+      mapaJSON.map[posicionNueva.y][posicionNueva.x].content.type !== null)
+  ) {
+    return mapaJSON;
+  } else {
+    if (mapaJSON.map[posicionNueva.y][posicionNueva.x].content.type === "Jugador") {
+      console.log(NPC.id, "Ha atacado a un Jugador");
+      // si el jugador actual tiene mas nivel que el NPC muere el NPC
+      if (NPC.level < mapaJSON.map[posicionNueva.y][posicionNueva.x].content.level) {
+        mapaJSON.map[NPC.position.y][NPC.position.x].content = { type: null };
+        // eliminamos al NPC de la lista de NPCs
+        mapaJSON.NPCs = mapaJSON.NPCs.filter((npc) => npc.id !== NPC.id);
+        console.log("El NPC ", NPC.id, " ha muerto");
+      } else {
+        // eliminamos al jugador de la lista de jugadores
+        let jugadorMuerto = null;
+        mapaJSON.players.forEach((player) => {
+          if (player.id === mapaJSON.map[posicionNueva.y][posicionNueva.x].content.id) {
+            jugadorMuerto = player;
+          }
+        });
+        console.log(jugadorMuerto.id, "ha muerto");
+        mapaJSON = eliminarDelMapa(mapaJSON, jugadorMuerto);
+        // actualizamos la posicion del NPC
+        mapaJSON.map[NPC.position.y][NPC.position.x].content = { type: null };
+        mapaJSON.map[posicionNueva.y][posicionNueva.x].content = { type: "NPC", id: NPC.id, level: NPC.level };
+        mapaJSON.NPCs.forEach((npc) => {
+          if (npc.id === NPC.id) {
+            npc.position = posicionNueva;
+          }
+        });
+      }
+    } else {
+      mapaJSON.map[posicionNueva.y][posicionNueva.x].content = { type: "NPC", id: NPC.id, level: NPC.level };
+      mapaJSON.map[NPC.position.y][NPC.position.x].content = { type: null };
+      // actualizamos la posicion del jugador
+      mapaJSON.NPCs.forEach((npc) => {
+        if (npc.id === NPC.id) {
+          npc.position = posicionNueva;
+        }
+      });
+    }
+
+    // guardamos el mapa en la base de datos
+    db.run("UPDATE Mapa SET Mapa = ? WHERE ID = ?", [JSON.stringify(mapaJSON), idPartida], function (err) {
+      if (err) {
+        console.error("Error al guardar el nuevo mapa:", err.message);
+      } else {
+        console.log("Mapa actualizado ID:", idPartida);
+      }
+    });
+
+    console.log("El NPC se ha movido a la posicion ", posicionNueva.x, posicionNueva.y, "ID:", NPC.id, "Nivel:", NPC.level);
+
+    return mapaJSON;
+  }
+};
+
 // FUNCION QUE elimina A UN JUGADOR del mapa
 const eliminarDelMapa = (mapaJSON, jugador) => {
   mapaJSON.map[jugador.position.y][jugador.position.x].content = { type: null };
@@ -199,4 +281,5 @@ module.exports = {
   getMapaFromDatabase,
   moverJugador,
   eliminarDelMapa,
+  moverNPC,
 };
