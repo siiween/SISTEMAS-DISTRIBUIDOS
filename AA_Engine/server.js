@@ -72,8 +72,8 @@ app.get("/api/jugador/:id", (req, res) => {
 io.on("connection", (socket) => {
   let JugadorAlias = null;
   let NPCCodigo = null;
-
   console.log("Nuevo cliente conectado");
+
   socket.on("disconnect", () => {
     if (JugadorAlias) {
       console.log(`Jugador desconectado: ${JugadorAlias}`);
@@ -460,7 +460,6 @@ const crearNuevoMapa = async () => {
       }
       map.push(row);
     }
-
     // Guardar el nuevo mapa en la base de datos
     db.run(
       "INSERT INTO Mapa (Mapa) VALUES (?)",

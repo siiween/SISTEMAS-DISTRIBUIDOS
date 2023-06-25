@@ -1,5 +1,6 @@
 const db = require("../database/db");
 const axios = require("axios");
+const dotenv = require("dotenv");
 
 const ciudades = ["Tokio", "Roma", "Madrid", "Pekin", "Barcelona", "Murcia", "Burgos", "New York", "Londres", "Copenhague"];
 
@@ -22,7 +23,9 @@ const getMapaFromDatabase = async (id) => {
 };
 
 const obtenerDatosTiempoAleatorio = async () => {
-  const apiKey = "a1e791977c2fd8a286c6ce7132fce7c3"; // Reemplaza "TU_API_KEY" con tu propia clave de API de OpenWeatherMap
+  // consegui api key del .env
+  const apiKey = dotenv.config().parsed.API_KEY;
+
   try {
     const datosTiempo = await obtenerDatosTiempoCiudadesAleatorias(apiKey);
     return datosTiempo;

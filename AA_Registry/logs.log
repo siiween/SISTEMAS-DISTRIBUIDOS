@@ -4,3 +4,13 @@
 {"level":"info","message":"Cliente desconectado","timestamp":"2023-06-21T17:26:00.435Z"}
 {"level":"info","message":"Servidor de Registro escuchando en el puerto 7000","timestamp":"2023-06-22T10:09:16.263Z"}
 {"alias":"1","level":"info","message":"Jugador eliminado correctamente","timestamp":"2023-06-22T10:09:48.223Z"}
+{"level":"info","message":"Servidor de Registro escuchando en el puerto 7000","timestamp":"2023-06-22T14:34:30.219Z"}
+{"level":"info","message":"Nuevo cliente conectado","timestamp":"2023-06-22T14:34:59.345Z"}
+{"EC":"-1","EF":"3","alias":"peruano","level":"info","message":"Jugador registrado correctamente","nivel":1,"timestamp":"2023-06-22T14:34:59.405Z"}
+{"level":"info","message":"Servidor de Registro escuchando en el puerto 7000","timestamp":"2023-06-22T14:57:41.527Z"}
+{"level":"info","message":"Nuevo cliente conectado","timestamp":"2023-06-22T14:57:42.396Z"}
+{"level":"info","message":"Nuevo cliente conectado","timestamp":"2023-06-22T14:57:45.463Z"}
+{"EC":"1","EF":"1","alias":"j3","level":"info","message":"Jugador registrado correctamente","nivel":1,"timestamp":"2023-06-22T14:57:45.521Z"}
+{"level":"info","message":"Nuevo cliente conectado","timestamp":"2023-06-22T14:57:55.984Z"}
+{"level":"info","message":"Servidor de Registro escuchando en el puerto 7000","timestamp":"2023-06-25T15:23:35.726Z"}
+{"level":"info","message":"Servidor de Registro escuchando en el puerto 4000","timestamp":"2023-06-25T15:23:47.750Z"}
