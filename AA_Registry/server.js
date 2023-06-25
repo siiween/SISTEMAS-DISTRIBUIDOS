@@ -29,30 +29,34 @@ io.on("connection", (socket) => {
   socket.on("createPlayer", async (jugador) => {
     try {
       const { alias, password, nivel, EF, EC } = jugador;
-      
+
       if (!alias || !password || !EF || !EC || !nivel) {
         const atributosFaltantes = [];
         if (!alias) atributosFaltantes.push("alias");
         if (!password) atributosFaltantes.push("password");
         if (!EF) atributosFaltantes.push("EF");
         if (!EC) atributosFaltantes.push("EC");
-        return socket.emit("editPlayerResponse", {
+
+        logger.error("Error al crear el jugador", { error: "Faltan atributos" });
+        return socket.emit("registrationResponse", {
           error: "Faltan los siguientes atributos: " + atributosFaltantes.join(", "),
         });
       }
-  
-      if (alias.length > 20 || !/^[0-9a-zA-Z]+$/.test(alias)) {        
-        return socket.emit("editPlayerResponse", {
+
+      if (alias.length > 20 || !/^[0-9a-zA-Z]+$/.test(alias)) {
+        logger.error("Error al crear el jugador", { error: "Alias no válido" });
+        return socket.emit("registrationResponse", {
           error: "El alias debe tener hasta 20 caracteres y solo puede contener números y letras.",
         });
       }
-  
+
       if (EF < -10 || EF > 10 || EC < -10 || EC > 10) {
-        return socket.emit("editPlayerResponse", {
+        logger.error("Error al crear el jugador", { error: "EC o EF invalidos" });
+        return socket.emit("registrationResponse", {
           error: "EF y EC deben ser valores entre -10 y 10.",
         });
       }
-  
+
       db.get("SELECT id FROM jugadores WHERE alias = ?", jugador.alias, async (err, row) => {
         if (row) {
           const response = {
@@ -62,19 +66,19 @@ io.on("connection", (socket) => {
           socket.emit("registrationResponse", response);
           return;
         }
-  
+
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-  
+
         await db.run("INSERT INTO jugadores (alias, password, nivel, EF, EC) VALUES (?, ?, ?, ?, ?)", [alias, hashedPassword, nivel, EF, EC]);
-  
+
         logger.info("Jugador registrado correctamente", {
           alias: jugador.alias,
           nivel: jugador.nivel,
           EF: jugador.EF,
           EC: jugador.EC,
         });
-  
+
         const response = {
           success: true,
         };
@@ -96,7 +100,7 @@ io.on("connection", (socket) => {
       socket.emit("registrationResponse", response);
     }
   });
-  
+
   socket.on("editPlayer", ({ alias, password, EF, EC }) => {
     if (!alias || !password || !EF || !EC) {
       const atributosFaltantes = [];
@@ -108,19 +112,19 @@ io.on("connection", (socket) => {
         error: "Faltan los siguientes atributos: " + atributosFaltantes.join(", "),
       });
     }
-  
+
     if (alias.length > 20 || !/^[0-9a-zA-Z]+$/.test(alias)) {
       return socket.emit("editPlayerResponse", {
         error: "El alias debe tener hasta 20 caracteres y solo puede contener números y letras.",
       });
     }
-  
+
     if (EF < -10 || EF > 10 || EC < -10 || EC > 10) {
       return socket.emit("editPlayerResponse", {
         error: "EF y EC deben ser valores entre -10 y 10.",
       });
     }
-  
+
     db.get("SELECT password FROM jugadores WHERE alias = ?", [alias], (err, row) => {
       if (err) {
         logger.error("Error en la consulta a la base de datos", { error: err.message });
@@ -135,7 +139,7 @@ io.on("connection", (socket) => {
         });
       } else {
         const contrasenaCoincide = bcrypt.compareSync(password, row.Password);
-  
+
         if (!contrasenaCoincide) {
           return socket.emit("editPlayerResponse", {
             error: "Error al editar el jugador",

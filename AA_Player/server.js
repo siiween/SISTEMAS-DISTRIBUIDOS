@@ -3,13 +3,15 @@ const readline = require("readline");
 const io = require("socket.io-client");
 // Lectura del terminal, parametros
 const args = process.argv.slice(2);
-const enginePort = args[0] ? parseInt(args[0], 10) : "http://localhost:3000";
-const kafkaPort = args[1] ? parseInt(args[1], 10) : "http://localhost:9092";
-const registryPort = args[2] ? parseInt(args[2], 10) : "http://localhost:7000";
+const enginePort = args[0] ?? "http://localhost:3000";
+const kafkaPort = args[1] ?? "http://localhost:9092";
+const registryPort = args[2] ?? "http://localhost:7000";
 // estado de la partida
 let mapaActual = null;
 let UsuarioLogeado = false;
 let userName = null;
+
+console.log(enginePort, kafkaPort, registryPort);
 
 const socket = io(enginePort);
 

@@ -14,3 +14,15 @@
 {"level":"info","message":"Nuevo cliente conectado","timestamp":"2023-06-22T14:57:55.984Z"}
 {"level":"info","message":"Servidor de Registro escuchando en el puerto 7000","timestamp":"2023-06-25T15:23:35.726Z"}
 {"level":"info","message":"Servidor de Registro escuchando en el puerto 4000","timestamp":"2023-06-25T15:23:47.750Z"}
+{"level":"info","message":"Servidor de Registro escuchando en el puerto 3050","timestamp":"2023-06-25T15:50:51.114Z"}
+{"level":"info","message":"Nuevo cliente conectado","timestamp":"2023-06-25T15:54:21.432Z"}
+{"level":"info","message":"Servidor de Registro escuchando en el puerto 3050","timestamp":"2023-06-25T15:54:43.986Z"}
+{"level":"info","message":"Nuevo cliente conectado","timestamp":"2023-06-25T15:54:44.231Z"}
+{"level":"info","message":"Nuevo cliente conectado","timestamp":"2023-06-25T15:55:01.449Z"}
+{"level":"info","message":"Servidor de Registro escuchando en el puerto 3050","timestamp":"2023-06-25T15:55:55.901Z"}
+{"level":"info","message":"Nuevo cliente conectado","timestamp":"2023-06-25T15:56:09.870Z"}
+{"level":"info","message":"Cliente desconectado","timestamp":"2023-06-25T16:07:12.549Z"}
+{"level":"info","message":"Servidor de Registro escuchando en el puerto 3050","timestamp":"2023-06-25T16:08:38.315Z"}
+{"level":"info","message":"Nuevo cliente conectado","timestamp":"2023-06-25T16:08:54.295Z"}
+{"error":"Alias no válido","level":"error","message":"Error al crear el jugador","timestamp":"2023-06-25T16:08:54.304Z"}
+{"level":"info","message":"Cliente desconectado","timestamp":"2023-06-25T16:09:30.038Z"}

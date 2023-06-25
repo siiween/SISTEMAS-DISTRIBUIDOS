@@ -2,8 +2,8 @@ const readline = require("readline");
 const io = require("socket.io-client");
 // Lectura del terminal, parametros
 const args = process.argv.slice(2);
-const enginePort = args[0] ? parseInt(args[0], 10) : "http://localhost:3000";
-const kafkaPort = args[1] ? parseInt(args[1], 10) : "http://localhost:6000";
+const enginePort = args[0] ?? "http://localhost:3000";
+const kafkaPort = args[1] ?? "http://localhost:6000";
 // estado de la partida
 let codigo = null;
 
